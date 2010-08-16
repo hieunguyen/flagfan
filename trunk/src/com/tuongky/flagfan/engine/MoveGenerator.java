@@ -208,7 +208,7 @@ public class MoveGenerator {
 			
 			int k;
 
-			for (k=i+1; k<9; k++) {
+			for (k=i+1; k<FILES; k++) {
 				if ((j>>k&1)!=0) {
 					rookRankCapTab[i][j][0] = k+3;
 					rookRankCapMask[i][j] |= 1<<(k+3);
@@ -218,7 +218,7 @@ public class MoveGenerator {
 				rookRankNoCapMask[i][j] |= 1<<(k+3);
 			}
 			
-			for (k++; k<9; k++)
+			for (k++; k<FILES; k++)
 			if ((j>>k&1)!=0) {
 				cannonRankCapTab[i][j][0] = k+3;
 				cannonRankCapMask[i][j] |= 1<<(k+3);
@@ -245,8 +245,8 @@ public class MoveGenerator {
 		}
 
 		// FILE
-		for (int i=0; i<10; i++)
-		for (int j=0; j<1024; j++) {
+		for (int i=0; i<RANKS; i++)
+		for (int j=0; j<1<<RANKS; j++) {
 			rookFileNoCapTab[i][j][0] = rookFileNoCapTab[i][j][1] = i+3;
 			rookFileCapTab[i][j][0] = rookFileCapTab[i][j][1] = i+3;
 			cannonFileCapTab[i][j][0] = cannonFileCapTab[i][j][1] = i+3;
@@ -254,7 +254,7 @@ public class MoveGenerator {
 			
 			int k;
 
-			for (k=i+1; k<10; k++) {
+			for (k=i+1; k<RANKS; k++) {
 				if ((j>>k&1)!=0) {
 					rookFileCapTab[i][j][0] = k+3;
 					rookFileCapMask[i][j] |= 1<<(k+3);
@@ -264,7 +264,7 @@ public class MoveGenerator {
 				rookFileNoCapMask[i][j] |= 1<<(k+3);
 			}
 			
-			for (k++; k<10; k++)
+			for (k++; k<RANKS; k++)
 			if ((j>>k&1)!=0) {
 				cannonFileCapTab[i][j][0] = k+3;
 				cannonFileCapMask[i][j] |= 1<<(k+3);
@@ -308,7 +308,10 @@ public class MoveGenerator {
 	}
 
 	public int genAllMoves(Position p, int[] moveList) {
-		int src, dst, move, num;
+		int[] board = p.board;
+		int[] pieces = p.pieces;
+		int[] moves;
+		int src, dst, num;
 		int pieceTag, ind, rank, file, x, y;
 		
 		num = 0;
@@ -316,33 +319,33 @@ public class MoveGenerator {
 		pieceTag = 16 + (p.turn<<4);
 		
 		// KING
-		src = p.pieces[pieceTag];
+		src = pieces[pieceTag];
+		moves = kingMoves[src];
 		if (src!=0) {
 			ind = 0;
-			dst = kingMoves[src][ind];
+			dst = moves[ind];
 			while (dst!=0) {
 				if ((board[dst]&pieceTag)==0) {
-					move = (src<<8)+dst;
-					mlist[num++] = move;
+					moveList[num++] = src<<8|dst;
 				}
 				ind++;
-				dst = kingMoves[src][ind];
+				dst = moves[ind];
 			}
 		}
 		
 		// BISHOP
 		for (int i=1; i<=2; i++) {
 			src = pieces[pieceTag+i];
+			moves = bishopMoves[src];
 			if (src!=0) {
 				ind = 0;
-				dst = bishopMoves[src][ind];
+				dst = moves[ind];
 				while (dst!=0) {
 					if ((board[dst]&pieceTag)==0) {
-						move = (src<<8)+dst;
-						mlist[num++] = move;
+						moveList[num++] = src<<8|dst;
 					}
 					ind++;
- 					dst = bishopMoves[src][ind];
+ 					dst = moves[ind];
 				}				
 			}
 		}
@@ -352,15 +355,15 @@ public class MoveGenerator {
 			src = pieces[pieceTag+i];
 			if (src!=0) {
 				ind = 0;
-				dst = elephantMoves[src][ind];				
+				moves = elephantMoves[src];
+				dst = moves[ind];				
 				while (dst!=0) {
 					int ee = elephantEyes[src][ind];
 					if (board[ee]==0&&(board[dst]&pieceTag)==0) {
-						move = (src<<8)+dst;
-						mlist[num++] = move;
+						moveList[num++] = src<<8|dst;
 					}
 					ind++;
- 					dst = elephantMoves[src][ind];
+ 					dst = moves[ind];
 				}				
 			}			
 		}
@@ -373,64 +376,60 @@ public class MoveGenerator {
 				rank = src >> 4;
 				file = src & 0xf;
 				
+				int bitRank, bitFile;
+				bitRank = p.bitRanks[rank]>>3;
+				bitFile = p.bitFiles[file]>>3;
+				
 				// HORIZONTAL
 				
-				y = rookRankNoCapTab[file-3][bitRanks[rank]>>3][0];
+				y = rookRankNoCapTab[file-3][bitRank][0];
 				while (y>file) {
-					move = src<<8|rank<<4|y;
-					mlist[num++] = move;
+					moveList[num++] = src<<8|rank<<4|y;
 					y--;
 				}
 
-				y = rookRankNoCapTab[file-3][bitRanks[rank]>>3][1];
+				y = rookRankNoCapTab[file-3][bitRank][1];
 				while (y<file) {
-					move = src<<8|rank<<4|y;
-					mlist[num++] = move;
+					moveList[num++] = src<<8|rank<<4|y;
 					y++;
 				}
 				
-				y = rookRankCapTab[file-3][bitRanks[rank]>>3][0];
+				y = rookRankCapTab[file-3][bitRank][0];
 				dst = rank<<4|y;
 				if (y!=file&&(board[dst]&pieceTag)==0) {
-					move = src<<8|dst;
-					mlist[num++] = move;
+					moveList[num++] = src<<8|dst;
 				}
 				
-				y = rookRankCapTab[file-3][bitRanks[rank]>>3][1];
+				y = rookRankCapTab[file-3][bitRank][1];
 				dst = rank<<4|y;
 				if (y!=file&&(board[dst]&pieceTag)==0) {
-					move = src<<8|dst;
-					mlist[num++] = move;
+					moveList[num++] = src<<8|dst;
 				}
 				
 				// VERTICAL
 				
-				x = rookFileNoCapTab[rank-3][bitFiles[file]>>3][0];
+				x = rookFileNoCapTab[rank-3][bitFile][0];
 				while (x>rank) {
-					move = src<<8|x<<4|file;
-					mlist[num++] = move;
+					moveList[num++] = src<<8|x<<4|file;
 					x--;
 				}
 
-				x = rookFileNoCapTab[rank-3][bitFiles[file]>>3][1];
+				x = rookFileNoCapTab[rank-3][bitFile][1];
 				while (x<rank) {
-					move = src<<8|x<<4|file;
-					mlist[num++] = move;
+					moveList[num++] = src<<8|x<<4|file;
 					x++;
 				}
 				
-				x = rookFileCapTab[rank-3][bitFiles[file]>>3][0];
+				x = rookFileCapTab[rank-3][bitFile][0];
 				dst = x<<4|file;
 				if (x!=rank&&(board[dst]&pieceTag)==0) {
-					move = src<<8|dst;
-					mlist[num++] = move;
+					moveList[num++] = src<<8|dst;
 				}
 				
-				x = rookFileCapTab[rank-3][bitFiles[file]>>3][1];
+				x = rookFileCapTab[rank-3][bitFile][1];
 				dst = x<<4|file;
 				if (x!=rank&&(board[dst]&pieceTag)==0) {
-					move = src<<8|dst;
-					mlist[num++] = move;
+					moveList[num++] = src<<8|dst;
 				}
 				
 			}			
@@ -444,64 +443,60 @@ public class MoveGenerator {
 				rank = src >> 4;
 				file = src & 0xf;
 				
+				int bitRank, bitFile;
+				bitRank = p.bitRanks[rank]>>3;
+				bitFile = p.bitFiles[file]>>3;
+				
 				// HORIZONTAL
 				
-				y = rookRankNoCapTab[file-3][bitRanks[rank]>>3][0];
+				y = rookRankNoCapTab[file-3][bitRank][0];
 				while (y>file) {
-					move = src<<8|rank<<4|y;
-					mlist[num++] = move;
+					moveList[num++] = src<<8|rank<<4|y;
 					y--;
 				}
 
-				y = rookRankNoCapTab[file-3][bitRanks[rank]>>3][1];
+				y = rookRankNoCapTab[file-3][bitRank][1];
 				while (y<file) {
-					move = src<<8|rank<<4|y;
-					mlist[num++] = move;
+					moveList[num++] = src<<8|rank<<4|y;
 					y++;
 				}
 				
-				y = cannonRankCapTab[file-3][bitRanks[rank]>>3][0];
+				y = cannonRankCapTab[file-3][bitRank][0];
 				dst = rank<<4|y;
 				if (y!=file&&(board[dst]&pieceTag)==0) {
-					move = src<<8|dst;
-					mlist[num++] = move;
+					moveList[num++] = src<<8|dst;
 				}
 				
-				y = cannonRankCapTab[file-3][bitRanks[rank]>>3][1];
+				y = cannonRankCapTab[file-3][bitRank][1];
 				dst = rank<<4|y;
 				if (y!=file&&(board[dst]&pieceTag)==0) {
-					move = src<<8|dst;
-					mlist[num++] = move;
+					moveList[num++] = src<<8|dst;
 				}
 				
 				// VERTICAL
 				
-				x = rookFileNoCapTab[rank-3][bitFiles[file]>>3][0];
+				x = rookFileNoCapTab[rank-3][bitFile][0];
 				while (x>rank) {
-					move = src<<8|x<<4|file;
-					mlist[num++] = move;
+					moveList[num++] = src<<8|x<<4|file;
 					x--;
 				}
 
-				x = rookFileNoCapTab[rank-3][bitFiles[file]>>3][1];
+				x = rookFileNoCapTab[rank-3][bitFile][1];
 				while (x<rank) {
-					move = src<<8|x<<4|file;
-					mlist[num++] = move;
+					moveList[num++] = src<<8|x<<4|file;
 					x++;
 				}
 				
-				x = cannonFileCapTab[rank-3][bitFiles[file]>>3][0];
+				x = cannonFileCapTab[rank-3][bitFile][0];
 				dst = x<<4|file;
 				if (x!=rank&&(board[dst]&pieceTag)==0) {
-					move = src<<8|dst;
-					mlist[num++] = move;
+					moveList[num++] = src<<8|dst;
 				}
 				
-				x = cannonFileCapTab[rank-3][bitFiles[file]>>3][1];
+				x = cannonFileCapTab[rank-3][bitFile][1];
 				dst = x<<4|file;
 				if (x!=rank&&(board[dst]&pieceTag)==0) {
-					move = src<<8|dst;
-					mlist[num++] = move;
+					moveList[num++] = src<<8|dst;
 				}
 				
 			}			
@@ -512,15 +507,15 @@ public class MoveGenerator {
 			src = pieces[pieceTag+i];
 			if (src!=0) {
 				ind = 0;
-				dst = knightMoves[src][ind];
+				moves = knightMoves[src];
+				dst = moves[ind];
 				while (dst!=0) {
 					int hleg = horseLegs[src][ind];
 					if (board[hleg]==0&&(board[dst]&pieceTag)==0) {
-						move = (src<<8)+dst;
-						mlist[num++] = move;
+						moveList[num++] = (src<<8)+dst;
 					}
 					ind++;
- 					dst = knightMoves[src][ind];
+ 					dst = moves[ind];
 				}				
 			}			
 		}
@@ -530,14 +525,14 @@ public class MoveGenerator {
 			src = pieces[pieceTag+i];
 			if (src!=0) {
 				ind = 0;
-				dst = pawnMoves[player][src][ind];
+				moves = pawnMoves[src][p.turn]; 
+				dst = moves[ind];
 				while (dst!=0) {
 					if ((board[dst]&pieceTag)==0) {
-						move = (src<<8)+dst;
-						mlist[num++] = move;
+						moveList[num++] = (src<<8)+dst;
 					}
 					ind++;
- 					dst = pawnMoves[player][src][ind];
+ 					dst = moves[ind];
 				}				
 			}			
 		}
