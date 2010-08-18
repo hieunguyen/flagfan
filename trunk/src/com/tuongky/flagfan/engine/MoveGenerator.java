@@ -1,6 +1,7 @@
 package com.tuongky.flagfan.engine;
 
 import java.util.Arrays;
+
 import static com.tuongky.flagfan.engine.Position.*;
 
 public class MoveGenerator {
@@ -47,7 +48,7 @@ public class MoveGenerator {
 	   0,  0,  0,  0,  0,  0,  0
 	};	
 
-		final static int[] legalMoveTab =
+	final static int[] legalMoveTab =
 	{
 	                       0, 0, 0, 0, 0, 0, 0, 0, 0,
 	  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -113,7 +114,7 @@ public class MoveGenerator {
 	int[][] knightMoves			= new int[BOARD_SIZE][10];
 	int[][] kingMoves			= new int[BOARD_SIZE][5];
 	
-	private static final MoveGenerator instance = new MoveGenerator();
+	private static MoveGenerator instance = null;
 	
 	void initInBoard() {
 		Arrays.fill(inBoard, false);
@@ -304,6 +305,7 @@ public class MoveGenerator {
 	}
 	
 	public static MoveGenerator getInstance() {
+		if (instance==null) instance = new MoveGenerator();
 		return instance;
 	}
 
@@ -538,6 +540,78 @@ public class MoveGenerator {
 		}
 		
 		return num;
+	}
+
+	public boolean isChecked(Position p, int side) {
+//		int[] board = p.board;
+//		int[] pieces = p.pieces;
+//		int[] bitFiles = p.bitFiles;
+//		int[] bitRanks = p.bitRanks;
+//		int src, dst, rank, file, pieceTag, y;
+//		
+//		pieceTag = 32 - (side<<4);
+//		src = pieces[48-pieceTag]; // KING
+//		
+//		rank = src >> 4;
+//		file = src & 0xf;
+//
+//		// KING kills KING
+//		dst = pieces[pieceTag];
+//		if (dst!=0) {
+//			y = dst & 0xf;
+//			if (y==file&&(rookFileCapMask[rank-3][bitFiles[file]>>3]&(1<<(dst>>4)))!=0) return true;
+//		}
+//		
+//		// ROOK kills KING
+//		for (int i=5; i<=6; i++) {
+//			dst = pieces[pieceTag+i];
+//			if (dst!=0) {
+//				if ((dst>>4)==rank) {
+//					if ((rookRankCapMask[file-3][bitRanks[rank]>>3]&(1<<(dst&0xf)))!=0) return true;
+//				} else
+//				if ((dst&0xf)==file) {
+//					if ((rookFileCapMask[rank-3][bitFiles[file]>>3]&(1<<(dst>>4)))!=0) return true;
+//				}
+//			}
+//		}
+//		
+//	
+//		// CANNON kills KING
+//		for (int i=7; i<=8; i++) {
+//			dst = pieces[pieceTag+i];
+//			if (dst!=0) {
+//				if ((dst>>4)==rank) {
+//					if ((cannonRankCapMask[file-3][bitRanks[rank]>>3]&(1<<(dst&0xf)))!=0) return true;
+//				} else
+//				if ((dst&0xf)==file) {
+//					if ((cannonFileCapMask[rank-3][bitFiles[file]>>3]&(1<<(dst>>4)))!=0) return true;
+//				}
+//			}			
+//		}
+//		
+//	
+//		// KNIGHT kills KING
+//		for (int i=9; i<=10; i++) {
+//			dst = pieces[pieceTag+i];
+//			if (dst!=0) {
+//				int hleg = horseLegTab[src-dst+256];
+//				if (hleg!=0&&board[dst+hleg]==0) return true;
+//			}
+//		}
+//
+//		// PAWN kills KING
+//		int ptmp;
+//		
+//		ptmp = board[src-1];
+//		if ((ptmp&pieceTag)!=0&&Position.PIECE_TYPES[ptmp]==6) return true;
+//
+//		ptmp = board[src+1];
+//		if ((ptmp&pieceTag)!=0&&Position.PIECE_TYPES[ptmp]==6) return true;
+//		
+//		ptmp = board[src-16+(side<<5)];
+//		if ((ptmp&pieceTag)!=0&&Position.PIECE_TYPES[ptmp]==6) return true;
+		
+		return false;
 	}
 	
 }
