@@ -13,4 +13,6 @@ public class Piece {
 	final static int RED		= 0;
 	final static int BLACK		= 1;
 	
+	final static String PIECE_CHARS = "TSVXPMB";  
+	
 }
