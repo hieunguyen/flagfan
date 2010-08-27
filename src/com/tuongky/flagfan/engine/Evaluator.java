@@ -162,7 +162,7 @@ public class Evaluator {
 			if (p.board[sqr]!=0) {
 				int pt = PIECE_TYPES[i];
 				int pieceValue = i<32 ? POS_VALUES[pt][sqr] : POS_VALUES[pt][254-sqr];
-				if (p.turnAtRoot==RED^i>=32) e += pieceValue; else e -= pieceValue;
+				if (p.turn==RED^i>=32) e += pieceValue; else e -= pieceValue;
 			}
 		}
 		return e;
