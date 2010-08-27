@@ -4,6 +4,7 @@ public class FEN {
 
 	final static String RED_PIECES 		= "KAERCHP";
 	final static String BLACK_PIECES 	= RED_PIECES.toLowerCase();
+	public static String START_FEN		= "rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RHEAKAEHR w - - - 1"; 
 
 	int[] board90;
 	int turn;

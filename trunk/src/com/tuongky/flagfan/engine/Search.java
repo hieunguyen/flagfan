@@ -3,7 +3,7 @@ package com.tuongky.flagfan.engine;
 public class Search {
 
 	final static int oo 		= 1001001;
-	final static int MAX_DEPTH 	= 6;
+	final static int MAX_DEPTH 	= 4;
 	final static int DEEPEST 	= 100;
 	final static int MAX_WIDTH 	= 100;
 	

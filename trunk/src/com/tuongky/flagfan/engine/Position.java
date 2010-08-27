@@ -26,7 +26,6 @@ public class Position {
 	int[] bitFiles;
 	
 	int turn;
-	int turnAtRoot;
 	
 	int[] moveHistory;
 	int ply;
@@ -45,7 +44,6 @@ public class Position {
 
 	private void init(int[] board90, int turn) {
 		this.turn = turn;
-		this.turnAtRoot = turn;
 		int[] startTag = {0,1,3,5,7,9,11};		
 		int[][] count = new int[2][7];
 		Arrays.fill(count[0], 0);
