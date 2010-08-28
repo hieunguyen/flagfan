@@ -45,7 +45,7 @@ public class Search {
 	public int findBestMove() {
 		bestMove = -1;
 		int bestScore = alphaBeta(0, MAX_DEPTH, -oo, +oo);
-		System.out.println("bestScore = "+bestScore);
+//		System.out.println("bestScore = "+bestScore);
 		return bestMove;
 	}
 	
