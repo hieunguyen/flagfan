@@ -135,6 +135,11 @@ public class Position {
 		return true;
 	}
 	
+	void makeRealMove(int move) {
+		movePiece(move);
+		turn ^= 1;
+	}
+	
 	void undoMakeMove() {
 		ply--;
 		turn ^= 1;
