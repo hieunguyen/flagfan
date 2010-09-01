@@ -150,8 +150,19 @@ public class FlagFanEngine {
 		int m = movesLeft<=0 ? 40 : movesLeft;
 		long tlim = (long) ((0.6-0.06)*(timeLeft+(m-1)*timeInc)/(m+7));
 		if (tlim>timeLeft/15) tlim = timeLeft/15;
-		int bestMove = findNextMove();
+//		search.setMaxDepth(maxDepth);
+		search.setTimeLimit(tlim);
+		int bestMove = search.findBestMove();
+		if (bestMove==-1) {
+			resign();
+			return ;
+		}
 		makemove(bestMove);
+	}
+	
+	void resign() {
+		out.println("resign");
+		computer = Piece.EMPTY; 
 	}
 	
 	public FlagFanEngine() throws IOException {
@@ -162,16 +173,12 @@ public class FlagFanEngine {
 	public void showNextMove() {
 		MyTimer timer = new MyTimer();
 		System.out.println("Thinking...");
-		int move = findNextMove();
+		int move = search.findBestMove();
 		p.printMoveForHuman(move);
 		double nps = Evaluator.getInstance().nodeCount/(timer.elapsedTime()*0.001)*1e-6;
 		timer.printElapsedTime();
 		System.out.println("Node Count = "+Evaluator.getInstance().nodeCount);
 		System.out.println("Node Per Second = "+String.valueOf(nps).substring(0, 5)+" millions");
-	}
-	
-	public int findNextMove() {
-		return search.findBestMove();
 	}
 	
 	public static void main(String[] args) throws IOException {
@@ -241,7 +248,7 @@ public class FlagFanEngine {
 		feature("smp", "1");
         feature("setboard", "0");
         feature("ping", "1");
-//        feature("done", "0");
+        feature("done", "0");
         feature("variants", "\"xiangqi\"");        
         feature("done", "1");
 	}
