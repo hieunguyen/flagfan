@@ -1,11 +1,13 @@
 package com.tuongky.flagfan.engine;
 
 import java.util.Arrays;
+import java.util.Random;
 
 import com.tuongky.utils.FEN;
 import com.tuongky.utils.FENException;
 
 import static com.tuongky.flagfan.engine.Piece.*;
+import static com.tuongky.flagfan.engine.Evaluator.*;
 
 public class Position {
 	
@@ -13,6 +15,9 @@ public class Position {
 	final static int FILES = 9;
 	final static int BOARD_SIZE = 256;
 	final static int MAX_MOVE_NUM = 400;
+	final static int NULL_MOVE = 0;
+	
+	final static int RND_SEED = 1234567;
 
 	final static int[] PIECE_TYPES = 
 	{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -28,7 +33,14 @@ public class Position {
 	int turn;
 	
 	int[] moveHistory;
-	int ply;
+	int num;
+	
+	long[][] zobristLockTable;
+	long zobristLockPlayer;
+	
+	long zobristLock;
+	
+	int redPower, blackPower;
 	
 	MoveGenerator mg;
 
@@ -38,8 +50,19 @@ public class Position {
 		bitRanks = new int[16];
 		bitFiles = new int[16];
 		moveHistory = new int[MAX_MOVE_NUM];
-		ply = 0;
+		num = 0;
 		mg = MoveGenerator.getInstance();
+		redPower = blackPower = 0;
+		initZobris();
+	}
+	
+	void initZobris() {
+		Random rnd = new Random(RND_SEED);
+		zobristLockTable = new long[14][256];
+		for (int i=0; i<14; i++)
+		for (int j=0; j<256; j++) zobristLockTable[i][j] = rnd.nextLong();
+		zobristLockPlayer = rnd.nextLong();
+		zobristLock = 0;
 	}
 
 	private void init(int[] board90, int turn) {
@@ -77,6 +100,14 @@ public class Position {
 		pieces[piece] = square;
 		bitRanks[square>>4] ^= 1 << (square&0xf);
 		bitFiles[square&0xf] ^= 1 << (square>>4);
+		int pType = PIECE_TYPES[piece];
+		if (piece<32) {
+			redPower += POS_VALUES[pType][square];
+		} else {
+			blackPower += POS_VALUES[pType][254-square];
+			pType += 7;
+		}
+		zobristLock ^= zobristLockTable[pType][square];
 	}
 
 	void removePiece(int square, int piece) {
@@ -84,10 +115,18 @@ public class Position {
 		pieces[piece] = 0;
 		bitRanks[square>>4] ^= 1 << (square&0xf);
 		bitFiles[square&0xf] ^= 1 << (square>>4);		
+		int pType = PIECE_TYPES[piece];
+		if (piece<32) {
+			redPower -= POS_VALUES[pType][square];
+		} else {
+			blackPower -= POS_VALUES[pType][254-square];
+			pType += 7;
+		}
+		zobristLock ^= zobristLockTable[pType][square];
 	}
 	
 	int movePiece(int move) {
-		int src, dst, movedPiece, capturedPiece;
+		int src, dst, movedPiece, capturedPiece, pType;
 		src = (move>>8)&0xff;
 		dst = move&0xff;
 		movedPiece = board[src];
@@ -97,17 +136,35 @@ public class Position {
 			bitFiles[dst&0xf] ^= 1<<(dst>>4);
 		} else {
 			pieces[capturedPiece] = 0;
+			pType = PIECE_TYPES[capturedPiece];
+			if (capturedPiece<32) redPower -= POS_VALUES[pType][dst]; 
+			else {
+				blackPower -= POS_VALUES[pType][254-dst];
+				pType += 7;
+			}
+			zobristLock ^= zobristLockTable[pType][dst];
 		}
 		board[src] = 0;
 		board[dst] = movedPiece;
 		pieces[movedPiece] = dst;
 		bitRanks[src>>4] ^= 1<<(src&0xf);
 		bitFiles[src&0xf] ^= 1<<(src>>4);
+
+		pType = PIECE_TYPES[movedPiece];
+		if (movedPiece<32) redPower += POS_VALUES[pType][dst] - POS_VALUES[pType][src];
+		else {
+			blackPower += POS_VALUES[pType][254-dst] - POS_VALUES[pType][254-src];
+			pType += 7;
+		}
+		
+		zobristLock ^= zobristLockTable[pType][src];
+		zobristLock ^= zobristLockTable[pType][dst];
+		
 		return capturedPiece;
 	}
 	
 	void undoMovePiece(int move, int capturedPiece) {
-		int src, dst, movedPiece;
+		int src, dst, movedPiece, pType;
 		src = (move>>8)&0xff;
 		dst = move&0xff;
 		movedPiece = board[dst];
@@ -116,11 +173,28 @@ public class Position {
 		pieces[movedPiece] = src;
 		bitRanks[src>>4] ^= 1<<(src&0xf);
 		bitFiles[src&0xf] ^= 1<<(src>>4);
+		
+		pType = PIECE_TYPES[movedPiece];
+		if (movedPiece<32) redPower += POS_VALUES[pType][src] - POS_VALUES[pType][dst];
+		else {
+			blackPower += POS_VALUES[pType][254-src] - POS_VALUES[pType][254-dst];
+			pType += 7;
+		}
+		zobristLock ^= zobristLockTable[pType][dst];
+		zobristLock ^= zobristLockTable[pType][src];
+		
 		if (capturedPiece==0) {
 			bitRanks[dst>>4] ^= 1<<(dst&0xf);
 			bitFiles[dst&0xf] ^= 1<<(dst>>4);			
 		} else {
 			pieces[capturedPiece] = dst;
+			pType = PIECE_TYPES[capturedPiece];
+			if (capturedPiece<32) redPower += POS_VALUES[pType][dst]; 
+			else {
+				blackPower += POS_VALUES[pType][254-dst];
+				pType += 7;
+			}
+			zobristLock ^= zobristLockTable[pType][dst];			
 		}
 	}
 	
@@ -131,22 +205,42 @@ public class Position {
 			return false;
 		}
 		turn ^= 1;
-		moveHistory[ply++] = move | (capturedPiece<<16);
+		zobristLock ^= zobristLockPlayer;
+		moveHistory[num++] = move | (capturedPiece<<16);
 		return true;
 	}
 	
 	void makeRealMove(int move) {
 		movePiece(move);
 		turn ^= 1;
+		zobristLock ^= zobristLockPlayer;
 	}
 	
 	void undoMakeMove() {
-		ply--;
+		num--;
 		turn ^= 1;
-		undoMovePiece(moveHistory[ply], (moveHistory[ply]>>16)&0xff);
+		zobristLock ^= zobristLockPlayer;
+		undoMovePiece(moveHistory[num], (moveHistory[num]>>16)&0xff);
+	}
+	
+	boolean isNullMoveOK() {
+		return num==0 || moveHistory[num-1] != NULL_MOVE;
+	}
+	
+	void makeNullMove() {
+		turn ^= 1;
+		zobristLock ^= zobristLockPlayer;
+		moveHistory[num++] = NULL_MOVE;
+	}
+	
+	void undoMakeNullMove() {
+		turn ^= 1;
+		zobristLock ^= zobristLockPlayer;
+		num--;
 	}
 	
 	public void printMoveForHuman(int move) {
+		if (move<=0) { System.out.println("No moves found!"); return ; }
 		int src, dst, r1, f1, r2, f2;
 		String moveStr, dir;
 		src = (move>>8)&0xff;

@@ -1,8 +1,6 @@
 package com.tuongky.flagfan.engine;
 
 import static com.tuongky.flagfan.engine.Piece.*; 
-import static com.tuongky.flagfan.engine.Position.*; 
-
 import com.tuongky.utils.FENException;
 
 public class Evaluator {
@@ -155,17 +153,8 @@ public class Evaluator {
 	}
 	
 	public int eval(Position p) {
-		nodeCount++;
-		int e = 0;
-		for (int i=16; i<48; i++) {
-			int sqr = p.pieces[i];
-			if (p.board[sqr]!=0) {
-				int pt = PIECE_TYPES[i];
-				int pieceValue = i<32 ? POS_VALUES[pt][sqr] : POS_VALUES[pt][254-sqr];
-				if (p.turn==RED^i>=32) e += pieceValue; else e -= pieceValue;
-			}
-		}
-		return e;
+		int material = p.redPower - p.blackPower;
+		return p.turn==RED ?  material : -material;   
 	}
 	
 	public static void main(String[] args) throws FENException {

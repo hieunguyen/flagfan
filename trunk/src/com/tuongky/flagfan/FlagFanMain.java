@@ -9,8 +9,8 @@ public class FlagFanMain {
 	GameInfor ginf;	
 	FlagFanView xqview;
 	
-	int p1 = HUMAN;
-	int p2 = COMPUTER;	
+	int p1 = COMPUTER;
+	int p2 = HUMAN;	
 
 	public FlagFanMain() {
 		new Initialization();

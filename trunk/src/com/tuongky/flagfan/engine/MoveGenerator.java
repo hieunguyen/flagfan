@@ -542,6 +542,260 @@ public class MoveGenerator {
 		return num;
 	}
 
+	public int genCaptureMoves(Position p, int[] moveList) {
+		int[] board = p.board;
+		int[] pieces = p.pieces;
+		int[] moves;
+		int src, dst, num;
+		int pieceTag, oppTag, ind, rank, file, x, y;
+		
+		num = 0;
+		
+		pieceTag = 16 + (p.turn<<4);
+		oppTag = 48 - pieceTag;
+		
+		// KING
+		src = pieces[pieceTag];
+		moves = kingMoves[src];
+		if (src!=0) {
+			ind = 0;
+			dst = moves[ind];
+			while (dst!=0) {
+				if ((board[dst]&oppTag)!=0) {
+					moveList[num++] = src<<8|dst;
+				}
+				ind++;
+				dst = moves[ind];
+			}
+		}
+		
+		// BISHOP
+		for (int i=1; i<=2; i++) {
+			src = pieces[pieceTag+i];
+			moves = bishopMoves[src];
+			if (src!=0) {
+				ind = 0;
+				dst = moves[ind];
+				while (dst!=0) {
+					if ((board[dst]&oppTag)!=0) {
+						moveList[num++] = src<<8|dst;
+					}
+					ind++;
+ 					dst = moves[ind];
+				}				
+			}
+		}
+		
+		// ELEPHANT
+		for (int i=3; i<=4; i++) {
+			src = pieces[pieceTag+i];
+			if (src!=0) {
+				ind = 0;
+				moves = elephantMoves[src];
+				dst = moves[ind];				
+				while (dst!=0) {
+					int ee = elephantEyes[src][ind];
+					if (board[ee]==0&&(board[dst]&oppTag)!=0) {
+						moveList[num++] = src<<8|dst;
+					}
+					ind++;
+ 					dst = moves[ind];
+				}				
+			}			
+		}
+		
+		// ROOK		
+		for (int i=5; i<=6; i++) {
+			src = pieces[pieceTag+i];
+			if (src!=0) {
+				
+				rank = src >> 4;
+				file = src & 0xf;
+				
+				int bitRank, bitFile;
+				bitRank = p.bitRanks[rank]>>3;
+				bitFile = p.bitFiles[file]>>3;
+				
+				// HORIZONTAL
+				
+				y = rookRankCapTab[file-3][bitRank][0];
+				dst = rank<<4|y;
+				if (y!=file&&(board[dst]&oppTag)!=0) {
+					moveList[num++] = src<<8|dst;
+				}
+				
+				y = rookRankCapTab[file-3][bitRank][1];
+				dst = rank<<4|y;
+				if (y!=file&&(board[dst]&oppTag)!=0) {
+					moveList[num++] = src<<8|dst;
+				}
+				
+				// VERTICAL
+				
+				x = rookFileCapTab[rank-3][bitFile][0];
+				dst = x<<4|file;
+				if (x!=rank&&(board[dst]&oppTag)!=0) {
+					moveList[num++] = src<<8|dst;
+				}
+				
+				x = rookFileCapTab[rank-3][bitFile][1];
+				dst = x<<4|file;
+				if (x!=rank&&(board[dst]&oppTag)!=0) {
+					moveList[num++] = src<<8|dst;
+				}
+				
+			}			
+		}
+
+		// CANNON
+		for (int i=7; i<=8; i++) {
+			src = pieces[pieceTag+i];
+			if (src!=0) {
+				
+				rank = src >> 4;
+				file = src & 0xf;
+				
+				int bitRank, bitFile;
+				bitRank = p.bitRanks[rank]>>3;
+				bitFile = p.bitFiles[file]>>3;
+				
+				// HORIZONTAL
+				
+				y = cannonRankCapTab[file-3][bitRank][0];
+				dst = rank<<4|y;
+				if (y!=file&&(board[dst]&oppTag)!=0) {
+					moveList[num++] = src<<8|dst;
+				}
+				
+				y = cannonRankCapTab[file-3][bitRank][1];
+				dst = rank<<4|y;
+				if (y!=file&&(board[dst]&oppTag)!=0) {
+					moveList[num++] = src<<8|dst;
+				}
+				
+				// VERTICAL
+				
+				x = cannonFileCapTab[rank-3][bitFile][0];
+				dst = x<<4|file;
+				if (x!=rank&&(board[dst]&oppTag)!=0) {
+					moveList[num++] = src<<8|dst;
+				}
+				
+				x = cannonFileCapTab[rank-3][bitFile][1];
+				dst = x<<4|file;
+				if (x!=rank&&(board[dst]&oppTag)!=0) {
+					moveList[num++] = src<<8|dst;
+				}
+				
+			}			
+		}
+
+		// KNIGHT
+		for (int i=9; i<=10; i++) {
+			src = pieces[pieceTag+i];
+			if (src!=0) {
+				ind = 0;
+				moves = knightMoves[src];
+				dst = moves[ind];
+				while (dst!=0) {
+					int hleg = horseLegs[src][ind];
+					if (board[hleg]==0&&(board[dst]&oppTag)!=0) {
+						moveList[num++] = (src<<8)+dst;
+					}
+					ind++;
+ 					dst = moves[ind];
+				}				
+			}			
+		}
+		
+		// PAWN
+		for (int i=11; i<=15; i++) {
+			src = pieces[pieceTag+i];
+			if (src!=0) {
+				ind = 0;
+				moves = pawnMoves[src][p.turn]; 
+				dst = moves[ind];
+				while (dst!=0) {
+					if ((board[dst]&oppTag)!=0) {
+						moveList[num++] = (src<<8)+dst;
+					}
+					ind++;
+ 					dst = moves[ind];
+				}				
+			}			
+		}
+		
+		return num;
+	}
+
+	boolean legalMove(Position p, int move) {
+		int[] board = p.board;
+		int src, dst, rank, file;
+		int pieceTag, movedPiece, capturedPiece;
+		
+		src = (move>>8)&0xff;
+		dst = move&0xff;
+		pieceTag = 16 + (p.turn<<4);
+		movedPiece = board[src];
+		capturedPiece = board[dst];
+		
+		if ((movedPiece&pieceTag)==0) return false;
+		if ((capturedPiece&pieceTag)!=0) return false;
+		
+		switch (PIECE_TYPES[movedPiece]) {
+			case 0: // KING
+				return inPalace[dst] && legalMoveTab[dst-src+256]==1;
+			case 1: // BISHOP
+				return inPalace[dst] && legalMoveTab[dst-src+256]==2;
+			case 2: // ELEPHANT
+				return ((src^dst)&0x80)==0 && legalMoveTab[dst-src+256]==3 && board[(src+dst)>>1]==0;
+			case 3: // ROOK
+				rank = src >> 4;
+				file = src & 0xf;				
+				if (file==(dst&0xf)) {					
+					if (capturedPiece==0) {						
+						return (rookFileNoCapMask[rank-3][p.bitFiles[file]>>3] & (1 << (dst>>4))) != 0;
+					} else {
+						return (rookFileCapMask[rank-3][p.bitFiles[file]>>3] & (1 << (dst>>4))) != 0;
+					}
+				} else
+				if (rank==(dst>>4)) {
+					if (capturedPiece==0) {
+						return (rookRankNoCapMask[file-3][p.bitRanks[rank]>>3] & (1 << (dst&0xf))) != 0;
+					} else {
+						return (rookRankCapMask[file-3][p.bitRanks[rank]>>3] & (1 << (dst&0xf))) != 0;
+					}
+				}
+				return false;
+			case 4: // CANNON
+				rank = src >> 4;
+				file = src & 0xf;
+				if (file==(dst&0xf)) {
+					if (capturedPiece==0) {
+						return (rookFileNoCapMask[rank-3][p.bitFiles[file]>>3] & (1 << (dst>>4))) != 0;
+					} else {
+						return (cannonFileCapMask[rank-3][p.bitFiles[file]>>3] & (1 << (dst>>4))) != 0;
+					}
+				} else
+				if (rank==(dst>>4)) {
+					if (capturedPiece==0) {
+						return (rookRankNoCapMask[file-3][p.bitRanks[rank]>>3] & (1 << (dst&0xf))) != 0;
+					} else {
+						return (cannonRankCapMask[file-3][p.bitRanks[rank]>>3] & (1 << (dst&0xf))) != 0;
+					}
+				}
+				return false;
+			case 5: // KNIGHT
+				int hleg = horseLegTab[dst-src+256];
+				return hleg!=0 && board[src+hleg]==0;
+			default: // PAWN
+				if (pieceTag==16)
+					return dst==src-16 || ((dst&0x80)==0&&Math.abs(dst-src)==1);
+				else
+					return dst==src+16 || ((dst&0x80)!=0&&Math.abs(dst-src)==1);
+		}
+	}
+	
 	public boolean isChecked(Position p, int side) {
 		int[] board = p.board;
 		int[] pieces = p.pieces;
