@@ -79,7 +79,7 @@ public class Search {
 				}				
 				p.undoMakeMove();
 				if (score>alpha) {
-					updatePV(ply, move);					
+//					updatePV(ply, move);					
 					foundPV = true;
 					alpha = score;
 					if (alpha>=beta) return beta;
@@ -161,11 +161,11 @@ public class Search {
 				}				
 				p.undoMakeMove();
 				if (score>alpha) {
-					updatePV(ply, ttMove);
 					foundPV = true;
 					alpha = score;
 					bestLocalMove = ttMove;
-					if (alpha>=beta) alpha = beta;
+					if (alpha>=beta) alpha = beta; else
+					updatePV(ply, ttMove);
 				}
 			}			
 		}
@@ -187,11 +187,11 @@ public class Search {
 					}				
 					p.undoMakeMove();
 					if (score>alpha) {
-						updatePV(ply, iidMove);
 						foundPV = true;
 						alpha = score;
 						bestLocalMove = iidMove;
-						if (alpha>=beta) alpha = beta;
+						if (alpha>=beta) alpha = beta; else
+						updatePV(ply, iidMove);
 					}
 				}				
 			}
@@ -216,7 +216,6 @@ public class Search {
 					}				
 					p.undoMakeMove();
 					if (score>alpha) {
-						updatePV(ply, move);
 						foundPV = true;
 						alpha = score;
 						bestLocalMove = move;
@@ -224,6 +223,7 @@ public class Search {
 							alpha = beta;
 							break;
 						}
+						updatePV(ply, move);
 					}
 				}
 			}
@@ -273,7 +273,12 @@ public class Search {
 			long t = (long) (timer.elapsedTime()*0.1);
 			System.out.println(d+" "+bestScore+" "+t+" "+"0"+" "+p.moveForHuman(bestMove));
 
-			for (int i=0; i<d; i++) System.out.println(Misc.wbMove(pv[0][i]));
+			for (int p=0; p<=d; p++) {
+				for (int i=p; i<DEEPEST&pv[0][i]>0; i++) { 
+					System.out.print(Misc.wbMove(pv[p][i])+" ");
+				}
+				System.out.println();
+			}
 			
 			if (timer.expired(timeLimit)) break;			
 		}				
