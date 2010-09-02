@@ -1,6 +1,7 @@
 package com.tuongky.flagfan.engine;
 
 import java.io.BufferedReader;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
@@ -8,6 +9,7 @@ import java.io.PrintWriter;
 
 import com.tuongky.utils.FEN;
 import com.tuongky.utils.FENException;
+import com.tuongky.utils.Misc;
 import com.tuongky.utils.MyTimer;
 
 public class FlagFanEngine {
@@ -20,7 +22,7 @@ public class FlagFanEngine {
     BufferedReader br;	
 	PrintStream out;
 	
-	PrintWriter log = new PrintWriter("ff.log");
+	PrintWriter log = new PrintWriter(new FileOutputStream("ff.log"), true);
 
 	Search search;
 	Position p;
@@ -64,7 +66,6 @@ public class FlagFanEngine {
 			String s = br.readLine().trim();
 			
 			log.println(s);
-			log.flush();
 			
 			String[] ss = s.split(" ");
 			command = ss[0].trim().toLowerCase();
@@ -147,10 +148,15 @@ public class FlagFanEngine {
 	}
 	
 	void play() {
+		MyTimer timer = new MyTimer();
+//		log.println("movesLeft: "+movesLeft);
 		int m = movesLeft<=0 ? 40 : movesLeft;
 		long tlim = (long) ((0.6-0.06)*(timeLeft+(m-1)*timeInc)/(m+7));
 		if (tlim>timeLeft/15) tlim = timeLeft/15;
-//		search.setMaxDepth(maxDepth);
+		
+		tlim = (timeLeft+m*timeInc)/(m+1);
+		
+		search.setMaxDepth(maxDepth);
 		search.setTimeLimit(tlim);
 		int bestMove = search.findBestMove();
 		if (bestMove==-1) {
@@ -158,6 +164,15 @@ public class FlagFanEngine {
 			return ;
 		}
 		makemove(bestMove);
+		gamePtr++;
+        timeLeft -= timer.elapsedTime();
+        timeLeft += timeInc;
+        movesLeft--;
+        if(movesLeft == 0) {
+            movesLeft = maxMoves;
+            if(maxMoves == 1) timeLeft  = maxTime;
+            else timeLeft += maxTime;
+        }
 	}
 	
 	void resign() {
@@ -228,7 +243,8 @@ public class FlagFanEngine {
 	}
 
 	void level(int mps, int base, int inc) {
-		movesLeft = mps;
+		maxMoves = mps;
+		movesLeft = maxMoves;
 		timeLeft = maxTime = base * 1000;
 		timeInc = inc * 1000; 
 	}
@@ -259,8 +275,9 @@ public class FlagFanEngine {
 	
 	void go() {
 		computer = side;
-		movesLeft -= (gamePtr + (side==Piece.RED?1:0))>>1;
+		movesLeft = -(gamePtr + (side==Piece.RED?1:0)>>1);
 		while (maxMoves>0 && movesLeft<=0) movesLeft += maxMoves;
+//		log.println("DEBUG: "+maxMoves+" "+movesLeft);
 	}
 	
 	void usermove(int move) {
@@ -279,15 +296,7 @@ public class FlagFanEngine {
 	}
 
 	void makemove(int move) {
-		int src, dst;
-		src = (move>>8)&0xff;
-		dst = move&0xff;
-		char r1, f1, r2, f2;
-		r1 = (char) ('0'+9-((src>>4)-3));
-		f1 = (char) ('a'+(src&0xf)-3);
-		r2 = (char) ('0'+9-((dst>>4)-3));
-		f2 = (char) ('a'+(dst&0xf)-3);
-		String ms = ""+f1+r1+f2+r2;
+		String ms = Misc.wbMove(move);
 		out.println("move "+ms);
 		side ^= Piece.RED ^ Piece.BLACK;
 		p.makeRealMove(move);

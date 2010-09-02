@@ -35,6 +35,9 @@ public class Position {
 	int[] moveHistory;
 	int num;
 	
+	long[] lockHist;
+	int[] lockHash;	
+	
 	long[][] zobristLockTable;
 	long zobristLockPlayer;
 	
@@ -53,6 +56,8 @@ public class Position {
 		num = 0;
 		mg = MoveGenerator.getInstance();
 		redPower = blackPower = 0;
+		lockHist = new long[MAX_MOVE_NUM];
+		lockHash = new int[1<<16];
 		initZobris();
 	}
 	
@@ -81,7 +86,9 @@ public class Position {
 			square = (rank+3)<<4|(file+3);
 			addPiece(square, pieceTag+startTag[pType]+count[side][pType]);
 			count[side][pType]++;
-		}				
+		}
+		lockHist[0] = zobristLock;
+		lockHash[(int)(zobristLock&0xffff)]++;		
 	}
 	
 	public Position(int[] board90, int turn) {
@@ -205,8 +212,12 @@ public class Position {
 			return false;
 		}
 		turn ^= 1;
+		move |= capturedPiece<<16;
+		if (isChecked()) move |= 0x01000000; 
+		moveHistory[num++] = move;
 		zobristLock ^= zobristLockPlayer;
-		moveHistory[num++] = move | (capturedPiece<<16);
+		lockHist[num] = zobristLock;
+		lockHash[(int)(zobristLock&0xffff)]++;
 		return true;
 	}
 	
@@ -231,6 +242,8 @@ public class Position {
 		turn ^= 1;
 		zobristLock ^= zobristLockPlayer;
 		moveHistory[num++] = NULL_MOVE;
+		lockHist[num] = zobristLock;
+		lockHash[(int)(zobristLock&0xffff)]++;
 	}
 	
 	void undoMakeNullMove() {
@@ -239,8 +252,30 @@ public class Position {
 		num--;
 	}
 	
+	int boardRepeated() {
+		if (lockHash[(int)(zobristLock&0xffff)]==0) return 0;		
+		boolean opp_check = true;
+		boolean me_check = true;
+		for (int index=num-1; index>0; index-=2) {
+			if (opp_check&&(moveHistory[index]&0xff000000)==0) opp_check = false;
+			if (me_check&&(moveHistory[index-1]&0xff000000)==0) me_check = false;
+			
+			if ((moveHistory[index]&0xffff)==NULL_MOVE||(moveHistory[index]&0xff0000)!=0
+				||(moveHistory[index-1]&0xffff)==NULL_MOVE||(moveHistory[index-1]&0xff0000)!=0) break;
+			
+			if (lockHist[index-1]==zobristLock) 
+				return 1 + (me_check? 2:0) + (opp_check? 4:0);
+		}
+		return 0;
+	}
+	
 	public void printMoveForHuman(int move) {
-		if (move<=0) { System.out.println("No moves found!"); return ; }
+		String moveStr = moveForHuman(move);
+		System.out.println(moveStr);
+	}
+
+	public String moveForHuman(int move) {
+		if (move<=0) return "No moves found!";
 		int src, dst, r1, f1, r2, f2;
 		String moveStr, dir;
 		src = (move>>8)&0xff;
@@ -262,7 +297,19 @@ public class Position {
 			dir = ".";
 			moveStr = ""+pc+f1+dir+f2;			
 		}
-		System.out.println(moveStr);
+		return moveStr;
+	}
+
+	public boolean legalMove(int move) {
+		return mg.legalMove(this, move);
+	}
+	
+	public boolean isChecked() {
+		return mg.isChecked(this, turn);
+	}
+	
+	public boolean isChecked(int side) {
+		return mg.isChecked(this, side);
 	}
 	
 }

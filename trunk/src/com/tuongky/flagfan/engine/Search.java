@@ -9,10 +9,12 @@ public class Search {
 
 	final static int oo 		= 1001001;
 	final static int WIN 		= 10000;
-	final static int MAX_DEPTH 	= 10;
+	final static int DRAW 		= -3;
+	final static int MAX_DEPTH 	= 50;
 	final static int DEEPEST 	= 100;
 	final static int MAX_WIDTH 	= 100;
-	final static int TIME_LIMIT = 5*60*1000; // 5 mins
+	final static int TIME_LIMIT = 15*1000; // 5 mins
+	final static int TIME_UNLIMITED = 24*60*60*1000; // 1 day 
 	
 	Position p;
 	TTable tt;
@@ -22,6 +24,8 @@ public class Search {
 	long[][] historyTable;
 	int[][] moveLists;
 	int bestMove;
+	
+	int[][] pv;
 	
 	MyTimer timer;
 	int maxDepth;
@@ -41,18 +45,20 @@ public class Search {
 	}
 	
 	public void setTimeLimit(long timeLimit) {
+		if (timeLimit<0) timeLimit = TIME_UNLIMITED;
 		this.timeLimit = timeLimit;
 	}
 	
 	int quiesce(int ply, int alpha, int beta) {
 
+		if (timer.expired(timeLimit)) return alpha; // fail low if pass time limit
+		
 		int score = evaluator.eval(p);
 		if (score>=beta) return score;
 		if (score>alpha) alpha = score;
 		
 		boolean foundPV = false;
 		
-//		int[] moveList = new int[MAX_WIDTH];
 		int[] moveList = moveLists[ply];
 		int num = mg.genCaptureMoves(p, moveList);
 		
@@ -73,6 +79,7 @@ public class Search {
 				}				
 				p.undoMakeMove();
 				if (score>alpha) {
+					updatePV(ply, move);					
 					foundPV = true;
 					alpha = score;
 					if (alpha>=beta) return beta;
@@ -84,6 +91,8 @@ public class Search {
 	}
 	
 	int PVS(int ply, int depth, int alpha, int beta) {
+		
+		if (timer.expired(timeLimit)) return alpha; // fail low if pass time limit
 		
 		if (alpha<-WIN+ply) {
 			alpha = -WIN+ply;
@@ -108,12 +117,23 @@ public class Search {
 			if (alpha>=beta) return beta;
 		}
 		
+		// check board repetition rules
+		int repValue = p.boardRepeated();
+		
+		if (repValue==1||repValue==7) {
+			if (DRAW<=alpha) return alpha;
+			if (beta<=DRAW) return beta;
+			return DRAW;
+		}
+		if (repValue==3) return alpha;
+		if (repValue==5) return beta;
+		
 		if (depth<=0) return quiesce(ply, alpha, beta);
 		
 		int score, bestLocalMove = -1;
 
 		// Null Move
-		if (p.isNullMoveOK() && depth>2 && !mg.isChecked(p, p.turn)) {
+		if (p.isNullMoveOK() && depth>2 && !p.isChecked()) {
 			p.makeNullMove();
 			int nmr = (depth>6) ? 3 : 2;
 			score = -PVS(ply+1, depth-1-nmr, -beta, -alpha);
@@ -125,9 +145,11 @@ public class Search {
 		int a = alpha;		
 		boolean foundPV = false;
 		
+		int ttMove = -1, iidMove = -1;
+		
 		// Transposition Table Move
-		if (ttEntry!=null&&mg.legalMove(p, ttEntry.move)) {
-			int ttMove = ttEntry.move;
+		if (ttEntry!=null&&p.legalMove(ttEntry.move)) {
+			ttMove = ttEntry.move;
 			if (p.makeMove(ttMove)) {
 				if (!foundPV) {
 					score = -PVS(ply+1, depth-1, -beta, -alpha);
@@ -139,6 +161,7 @@ public class Search {
 				}				
 				p.undoMakeMove();
 				if (score>alpha) {
+					updatePV(ply, ttMove);
 					foundPV = true;
 					alpha = score;
 					bestLocalMove = ttMove;
@@ -147,14 +170,41 @@ public class Search {
 			}			
 		}
 		
+		// IID - Internal Iterative Deepening
+		if (alpha<beta && depth>=3 && ttMove==-1) {
+			score = PVS(ply, depth-2, alpha, beta);
+			TTEntry entry = tt.retrieve(p.zobristLock);			
+			if (entry!=null && p.legalMove(entry.move)) {
+				iidMove = entry.move;
+				if (p.makeMove(iidMove)) {
+					if (!foundPV) {
+						score = -PVS(ply+1, depth-1, -beta, -alpha);
+					} else {
+						score = -PVS(ply+1, depth-1, -alpha-1, -alpha);
+						if (alpha<score&&score<beta) { // re-search
+							score = -PVS(ply+1, depth-1, -beta, -alpha);
+						}
+					}				
+					p.undoMakeMove();
+					if (score>alpha) {
+						updatePV(ply, iidMove);
+						foundPV = true;
+						alpha = score;
+						bestLocalMove = iidMove;
+						if (alpha>=beta) alpha = beta;
+					}
+				}				
+			}
+		}
+		
 		if (alpha<beta) {
-//			int[] moveList = new int[MAX_WIDTH];
 			int[] moveList = moveLists[ply];
 			int num = mg.genAllMoves(p, moveList);
 			MoveSorter ms = new MoveSorter(p, moveList, num, historyTable);
 			
 			for (int i=0; i<num; i++) {
 				int move = ms.nextMove();
+				if (move==ttMove||move==iidMove) continue;
 				if (p.makeMove(move)) {
 					if (!foundPV) {
 						score = -PVS(ply+1, depth-1, -beta, -alpha);
@@ -166,6 +216,7 @@ public class Search {
 					}				
 					p.undoMakeMove();
 					if (score>alpha) {
+						updatePV(ply, move);
 						foundPV = true;
 						alpha = score;
 						bestLocalMove = move;
@@ -190,44 +241,46 @@ public class Search {
 		return alpha;
 	}
 	
-	void beforeSearch() {
-//		timer = new MyTimer();
-		tt = new TTable();
-		historyTable = new long[256][256];
+	void updatePV(int ply, int move) {
+		pv[ply][ply] = move;
+		int i;
+		for (i=ply+1; pv[ply+1][i]>0; i++) {
+			pv[ply][i] = pv[ply+1][i];
+		}
+		pv[ply][i] = 0;
 	}
 	
-	void aspirationSearch() {
-		bestMove = -1;
-		int bestScore = PVS(0, 1, -oo, +oo);
-		int delta = 30;
-		for (int d=2; d<=maxDepth; d++) {
-			int alpha = bestScore - delta;
-			int beta = bestScore + delta;
-			int score = PVS(0, d, alpha, beta);
-			if (score<=alpha||score>=beta) {
-				System.out.println("Re-searching...");
-				score = PVS(0, d, -oo, +oo);
-			}
-			bestScore = score;
-			Misc.debug(d, bestScore);
-			p.printMoveForHuman(bestMove);
-		}		
+	void beforeSearch() {
+		timer = new MyTimer();
+		tt = new TTable();
+		historyTable = new long[256][256];
+		pv = new int[DEEPEST+1][DEEPEST+1];
 	}
 	
 	void iterativeDeepning() {
 		bestMove = -1;
-		int bestScore;
+		int bestScore = -1;
+		int preBestMove, preBestScore;
 		for (int d=1; d<=maxDepth; d++) {
+			preBestMove = bestMove;
+			preBestScore = bestScore;
 			bestScore = PVS(0, d, -oo, +oo);
-			Misc.debug(d, bestScore);
-			p.printMoveForHuman(bestMove);
-		}		
-		
+			if (timer.expired(timeLimit)) {
+				System.out.println("Expired, use the best move from the previous iteration.");
+				bestMove = preBestMove;
+				bestScore = preBestScore;
+			}
+			long t = (long) (timer.elapsedTime()*0.1);
+			System.out.println(d+" "+bestScore+" "+t+" "+"0"+" "+p.moveForHuman(bestMove));
+
+			for (int i=0; i<d; i++) System.out.println(Misc.wbMove(pv[0][i]));
+			
+			if (timer.expired(timeLimit)) break;			
+		}				
 	}
 	
 	public int findBestMove() {
 		beforeSearch();
-//		aspirationSearch();
 		iterativeDeepning();
 		return bestMove;
 	}
