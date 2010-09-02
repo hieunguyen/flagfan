@@ -51,4 +51,8 @@ public class MyTimer {
 		return totalTime;
 	}
 	
+	public boolean expired(long timeLimit) {
+		return elapsedTime()>timeLimit;
+	}
+	
 }
