@@ -14,7 +14,9 @@ public class Search {
 	final static int DEEPEST 	= 100;
 	final static int MAX_WIDTH 	= 100;
 	final static int TIME_LIMIT = 15*1000; // 5 mins
-	final static int TIME_UNLIMITED = 24*60*60*1000; // 1 day 
+	final static int TIME_UNLIMITED = 24*60*60*1000; // 1 day
+	final static boolean PV_NODE	= true;
+	final static boolean NON_PV		= false;
 	
 	Position p;
 	TTable tt;
@@ -30,6 +32,8 @@ public class Search {
 	MyTimer timer;
 	int maxDepth;
 	long timeLimit;
+	
+	long qTime;
 	
 	public Search(Position p) {
 		this.p = p;
@@ -50,8 +54,10 @@ public class Search {
 	}
 	
 	int quiesce(int ply, int alpha, int beta) {
-
+		
 		if (timer.expired(timeLimit)) return alpha; // fail low if pass time limit
+		
+		if (p.isChecked()) return PVS(ply+1, 1, alpha, beta, PV_NODE);
 		
 		int score = evaluator.eval(p);
 		if (score>=beta) return score;
@@ -90,7 +96,7 @@ public class Search {
 		return alpha;
 	}
 	
-	int PVS(int ply, int depth, int alpha, int beta) {
+	int PVS(int ply, int depth, int alpha, int beta, boolean pvNode) {
 		
 		if (timer.expired(timeLimit)) return alpha; // fail low if pass time limit
 		
@@ -133,10 +139,11 @@ public class Search {
 		int score, bestLocalMove = -1;
 
 		// Null Move
-		if (p.isNullMoveOK() && depth>2 && !p.isChecked()) {
+		if ((ttEntry==null||ttEntry.flag!=EXACT_SCORE) && 
+				p.isNullMoveOK() && depth>2 && !p.isChecked()) {
 			p.makeNullMove();
 			int nmr = (depth>6) ? 3 : 2;
-			score = -PVS(ply+1, depth-1-nmr, -beta, -alpha);
+			score = -PVS(ply+1, depth-1-nmr, -beta, -alpha, PV_NODE);
 			p.undoMakeNullMove();
 			if (score>=beta) return beta;	
 			if (score>alpha) { alpha = score; }
@@ -152,11 +159,11 @@ public class Search {
 			ttMove = ttEntry.move;
 			if (p.makeMove(ttMove)) {
 				if (!foundPV) {
-					score = -PVS(ply+1, depth-1, -beta, -alpha);
+					score = -PVS(ply+1, depth-1, -beta, -alpha, PV_NODE);
 				} else {
-					score = -PVS(ply+1, depth-1, -alpha-1, -alpha);
+					score = -PVS(ply+1, depth-1, -alpha-1, -alpha, NON_PV);
 					if (alpha<score&&score<beta) { // re-search
-						score = -PVS(ply+1, depth-1, -beta, -alpha);
+						score = -PVS(ply+1, depth-1, -beta, -alpha, PV_NODE);
 					}
 				}				
 				p.undoMakeMove();
@@ -164,25 +171,25 @@ public class Search {
 					foundPV = true;
 					alpha = score;
 					bestLocalMove = ttMove;
-					if (alpha>=beta) alpha = beta; else
-					updatePV(ply, ttMove);
+					if (alpha>=beta) alpha = beta; 
+					else updatePV(ply, ttMove);
 				}
 			}			
 		}
 		
 		// IID - Internal Iterative Deepening
 		if (alpha<beta && depth>=3 && ttMove==-1) {
-			score = PVS(ply, depth-2, alpha, beta);
+			score = PVS(ply, depth-2, alpha, beta, PV_NODE);
 			TTEntry entry = tt.retrieve(p.zobristLock);			
 			if (entry!=null && p.legalMove(entry.move)) {
 				iidMove = entry.move;
 				if (p.makeMove(iidMove)) {
 					if (!foundPV) {
-						score = -PVS(ply+1, depth-1, -beta, -alpha);
+						score = -PVS(ply+1, depth-1, -beta, -alpha, PV_NODE);
 					} else {
-						score = -PVS(ply+1, depth-1, -alpha-1, -alpha);
+						score = -PVS(ply+1, depth-1, -alpha-1, -alpha, NON_PV);
 						if (alpha<score&&score<beta) { // re-search
-							score = -PVS(ply+1, depth-1, -beta, -alpha);
+							score = -PVS(ply+1, depth-1, -beta, -alpha, PV_NODE);
 						}
 					}				
 					p.undoMakeMove();
@@ -190,8 +197,8 @@ public class Search {
 						foundPV = true;
 						alpha = score;
 						bestLocalMove = iidMove;
-						if (alpha>=beta) alpha = beta; else
-						updatePV(ply, iidMove);
+						if (alpha>=beta) alpha = beta; 
+						else updatePV(ply, iidMove);
 					}
 				}				
 			}
@@ -207,11 +214,12 @@ public class Search {
 				if (move==ttMove||move==iidMove) continue;
 				if (p.makeMove(move)) {
 					if (!foundPV) {
-						score = -PVS(ply+1, depth-1, -beta, -alpha);
+						score = -PVS(ply+1, depth-1, -beta, -alpha, PV_NODE);
 					} else {
-						score = -PVS(ply+1, depth-1, -alpha-1, -alpha);
+						score = -PVS(ply+1, depth-(i>=7?2:1), -alpha-1, -alpha, NON_PV); // LMR
+//						score = -PVS(ply+1, depth-1, -alpha-1, -alpha, NON_PV);
 						if (alpha<score&&score<beta) { // re-search
-							score = -PVS(ply+1, depth-1, -beta, -alpha);
+							score = -PVS(ply+1, depth-1, -beta, -alpha, PV_NODE);
 						}
 					}				
 					p.undoMakeMove();
@@ -255,6 +263,7 @@ public class Search {
 		tt = new TTable();
 		historyTable = new long[256][256];
 		pv = new int[DEEPEST+1][DEEPEST+1];
+		qTime = 0;
 	}
 	
 	void iterativeDeepning() {
@@ -264,7 +273,7 @@ public class Search {
 		for (int d=1; d<=maxDepth; d++) {
 			preBestMove = bestMove;
 			preBestScore = bestScore;
-			bestScore = PVS(0, d, -oo, +oo);
+			bestScore = PVS(0, d, -oo, +oo, PV_NODE);
 			if (timer.expired(timeLimit)) {
 				System.out.println("Expired, use the best move from the previous iteration.");
 				bestMove = preBestMove;
@@ -273,15 +282,22 @@ public class Search {
 			long t = (long) (timer.elapsedTime()*0.1);
 			System.out.println(d+" "+bestScore+" "+t+" "+"0"+" "+p.moveForHuman(bestMove));
 
-			for (int p=0; p<=d; p++) {
-				for (int i=p; i<DEEPEST&pv[0][i]>0; i++) { 
-					System.out.print(Misc.wbMove(pv[p][i])+" ");
-				}
-				System.out.println();
-			}
+//			for (int i=0; pv[0][i]>0; i++) {
+//				System.out.print(Misc.wbMove(pv[0][i])+" ");
+//			}
+//			System.out.println();
+			
+//			for (int i=0; pv[0][i]>0; i++) {
+//				System.out.print(p.moveForHuman(pv[0][i])+" ");
+//				if (!p.legalMove(pv[0][i])) { System.out.println("Illegal move!"); }
+//				p.makeMove(pv[0][i]);
+//			}
+//			for (int i=0; pv[0][i]>0; i++) p.undoMakeMove();
+//			System.out.println("\n");
 			
 			if (timer.expired(timeLimit)) break;			
-		}				
+		}
+		System.out.println("QTime = "+qTime*0.001+" s");
 	}
 	
 	public int findBestMove() {

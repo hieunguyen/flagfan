@@ -221,12 +221,6 @@ public class Position {
 		return true;
 	}
 	
-	void makeRealMove(int move) {
-		movePiece(move);
-		turn ^= 1;
-		zobristLock ^= zobristLockPlayer;
-	}
-	
 	void undoMakeMove() {
 		num--;
 		turn ^= 1;
@@ -275,6 +269,10 @@ public class Position {
 	}
 
 	public String moveForHuman(int move) {
+		return moveForHuman(move, turn);
+	}
+	
+	public String moveForHuman(int move, int side) {
 		if (move<=0) return "No moves found!";
 		int src, dst, r1, f1, r2, f2;
 		String moveStr, dir;
@@ -285,9 +283,9 @@ public class Position {
 		f1 = (src&0xf)-2;
 		r2 = (dst>>4)-2;
 		f2 = (dst&0xf)-2;
-		if (turn==RED) { f1 = 10-f1; f2 = 10-f2; }
+		if (side==RED) { f1 = 10-f1; f2 = 10-f2; }
 		if (r1!=r2) {
-			if (turn==RED^r2<r1) dir = "-"; else dir = "+";
+			if (side==RED^r2<r1) dir = "-"; else dir = "+";
 			if (f1==f2) {
 				moveStr = ""+pc+f1+dir+Math.abs(r1-r2);			
 			} else {
@@ -299,7 +297,7 @@ public class Position {
 		}
 		return moveStr;
 	}
-
+	
 	public boolean legalMove(int move) {
 		return mg.legalMove(this, move);
 	}
