@@ -282,7 +282,7 @@ public class FlagFanEngine {
 	
 	void usermove(int move) {
 		side ^= Piece.RED ^ Piece.BLACK;
-		p.makeRealMove(move);
+		p.makeMove(move);
 	}
 	
 	// Engine -> GUI
@@ -299,7 +299,7 @@ public class FlagFanEngine {
 		String ms = Misc.wbMove(move);
 		out.println("move "+ms);
 		side ^= Piece.RED ^ Piece.BLACK;
-		p.makeRealMove(move);
+		p.makeMove(move);
 	}
 	
 }
