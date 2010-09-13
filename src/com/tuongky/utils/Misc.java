@@ -32,4 +32,17 @@ public class Misc {
 		return ms;
 	}
 	
+	public static int ffMove(String wbm) {
+		int r1, f1, r2, f2;
+		r1 = (wbm.charAt(1)-'0');
+		f1 = (wbm.charAt(0)-'a')+3;
+		r2 = (wbm.charAt(3)-'0');
+		f2 = (wbm.charAt(2)-'a')+3;
+		r1 = 9-r1+3; r2 = 9-r2+3;
+		int src, dst;
+		src = (r1<<4)+f1;
+		dst = (r2<<4)+f2;
+		return (src<<8)+dst;		
+	}
+	
 }
