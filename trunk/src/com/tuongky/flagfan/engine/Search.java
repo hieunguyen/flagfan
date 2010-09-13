@@ -2,7 +2,6 @@ package com.tuongky.flagfan.engine;
 
 import static com.tuongky.flagfan.engine.TTEntry.*;
 
-import com.tuongky.utils.Misc;
 import com.tuongky.utils.MyTimer;
 
 public class Search {
@@ -33,7 +32,9 @@ public class Search {
 	int maxDepth;
 	long timeLimit;
 	
-	long qTime;
+	long qTime, gmTime;
+	
+	public long nodeCount;
 	
 	public Search(Position p) {
 		this.p = p;
@@ -66,7 +67,9 @@ public class Search {
 		boolean foundPV = false;
 		
 		int[] moveList = moveLists[ply];
+		MyTimer gmTimer = new MyTimer();
 		int num = mg.genCaptureMoves(p, moveList);
+		gmTime += gmTimer.elapsedTime();
 		
 		if (num==0) return alpha;
 		
@@ -100,6 +103,8 @@ public class Search {
 		
 		if (timer.expired(timeLimit)) return alpha; // fail low if pass time limit
 		
+		nodeCount++;
+		
 		if (alpha<-WIN+ply) {
 			alpha = -WIN+ply;
 			if (alpha>=beta) return beta;
@@ -131,10 +136,15 @@ public class Search {
 			if (beta<=DRAW) return beta;
 			return DRAW;
 		}
-		if (repValue==3) return alpha;
-		if (repValue==5) return beta;
+		if (repValue==3) return Math.max(-WIN+ply, alpha);
+		if (repValue==5) return Math.min(WIN-ply, beta);
 		
-		if (depth<=0) return quiesce(ply, alpha, beta);
+		if (depth<=0) {
+			MyTimer timer = new MyTimer();
+			int tmp = quiesce(ply, alpha, beta);
+			qTime += timer.elapsedTime();
+			return tmp;
+		}
 		
 		int score, bestLocalMove = -1;
 
@@ -206,7 +216,11 @@ public class Search {
 		
 		if (alpha<beta) {
 			int[] moveList = moveLists[ply];
+			
+			MyTimer gmTimer = new MyTimer();
 			int num = mg.genAllMoves(p, moveList);
+			gmTime += gmTimer.elapsedTime();
+			
 			MoveSorter ms = new MoveSorter(p, moveList, num, historyTable);
 			
 			for (int i=0; i<num; i++) {
@@ -216,7 +230,9 @@ public class Search {
 					if (!foundPV) {
 						score = -PVS(ply+1, depth-1, -beta, -alpha, PV_NODE);
 					} else {
-						score = -PVS(ply+1, depth-(i>=7?2:1), -alpha-1, -alpha, NON_PV); // LMR
+						int rd = 2;
+//						if (depth<6) rd = 2;
+						score = -PVS(ply+1, depth-(i>=7?rd:1), -alpha-1, -alpha, NON_PV); // LMR
 //						score = -PVS(ply+1, depth-1, -alpha-1, -alpha, NON_PV);
 						if (alpha<score&&score<beta) { // re-search
 							score = -PVS(ply+1, depth-1, -beta, -alpha, PV_NODE);
@@ -264,6 +280,8 @@ public class Search {
 		historyTable = new long[256][256];
 		pv = new int[DEEPEST+1][DEEPEST+1];
 		qTime = 0;
+		gmTime = 0;
+		nodeCount = 0;
 	}
 	
 	void iterativeDeepning() {
@@ -298,6 +316,7 @@ public class Search {
 			if (timer.expired(timeLimit)) break;			
 		}
 		System.out.println("QTime = "+qTime*0.001+" s");
+		System.out.println("GenMoveTime = "+gmTime*0.001+" s");
 	}
 	
 	public int findBestMove() {

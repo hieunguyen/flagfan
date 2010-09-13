@@ -102,7 +102,7 @@ public class Position {
 		init(f.getBoard90(), f.getTurn());
 	}
 	
-	void addPiece(int square, int piece) {
+	public void addPiece(int square, int piece) {
 		board[square] = piece;
 		pieces[piece] = square;
 		bitRanks[square>>4] ^= 1 << (square&0xf);
@@ -117,7 +117,7 @@ public class Position {
 		zobristLock ^= zobristLockTable[pType][square];
 	}
 
-	void removePiece(int square, int piece) {
+	public void removePiece(int square, int piece) {
 		board[piece] = 0;
 		pieces[piece] = 0;
 		bitRanks[square>>4] ^= 1 << (square&0xf);
@@ -132,7 +132,7 @@ public class Position {
 		zobristLock ^= zobristLockTable[pType][square];
 	}
 	
-	int movePiece(int move) {
+	public int movePiece(int move) {
 		int src, dst, movedPiece, capturedPiece, pType;
 		src = (move>>8)&0xff;
 		dst = move&0xff;
@@ -170,7 +170,7 @@ public class Position {
 		return capturedPiece;
 	}
 	
-	void undoMovePiece(int move, int capturedPiece) {
+	public void undoMovePiece(int move, int capturedPiece) {
 		int src, dst, movedPiece, pType;
 		src = (move>>8)&0xff;
 		dst = move&0xff;
@@ -205,7 +205,7 @@ public class Position {
 		}
 	}
 	
-	boolean makeMove(int move) {
+	public boolean makeMove(int move) {
 		int capturedPiece = movePiece(move);
 		if (mg.isChecked(this, turn)) {
 			undoMovePiece(move, capturedPiece);
@@ -221,18 +221,18 @@ public class Position {
 		return true;
 	}
 	
-	void undoMakeMove() {
+	public void undoMakeMove() {
 		num--;
 		turn ^= 1;
 		zobristLock ^= zobristLockPlayer;
 		undoMovePiece(moveHistory[num], (moveHistory[num]>>16)&0xff);
 	}
 	
-	boolean isNullMoveOK() {
+	public boolean isNullMoveOK() {
 		return num==0 || moveHistory[num-1] != NULL_MOVE;
 	}
 	
-	void makeNullMove() {
+	public void makeNullMove() {
 		turn ^= 1;
 		zobristLock ^= zobristLockPlayer;
 		moveHistory[num++] = NULL_MOVE;
@@ -240,16 +240,17 @@ public class Position {
 		lockHash[(int)(zobristLock&0xffff)]++;
 	}
 	
-	void undoMakeNullMove() {
+	public void undoMakeNullMove() {
 		turn ^= 1;
 		zobristLock ^= zobristLockPlayer;
 		num--;
 	}
 	
-	int boardRepeated() {
+	public int boardRepeated() {
 		if (lockHash[(int)(zobristLock&0xffff)]==0) return 0;		
 		boolean opp_check = true;
 		boolean me_check = true;
+		int rep = 0;
 		for (int index=num-1; index>0; index-=2) {
 			if (opp_check&&(moveHistory[index]&0xff000000)==0) opp_check = false;
 			if (me_check&&(moveHistory[index-1]&0xff000000)==0) me_check = false;
@@ -257,8 +258,10 @@ public class Position {
 			if ((moveHistory[index]&0xffff)==NULL_MOVE||(moveHistory[index]&0xff0000)!=0
 				||(moveHistory[index-1]&0xffff)==NULL_MOVE||(moveHistory[index-1]&0xff0000)!=0) break;
 			
-			if (lockHist[index-1]==zobristLock) 
-				return 1 + (me_check? 2:0) + (opp_check? 4:0);
+			if (lockHist[index-1]==zobristLock) {
+				rep++;
+				if (rep>=2) return 1 + (me_check? 2:0) + (opp_check? 4:0);
+			}
 		}
 		return 0;
 	}
@@ -308,6 +311,20 @@ public class Position {
 	
 	public boolean isChecked(int side) {
 		return mg.isChecked(this, side);
+	}
+
+	public int material() {
+		int r = redPower - blackPower;
+		return turn==RED ?  r : -r;   		
+	}
+
+	public int see(int src, int dst) {
+		
+		return 0;
+	}
+
+	public int see(int move) {
+		return see(move>>8&0xff, move&0xff);
 	}
 	
 }

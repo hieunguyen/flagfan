@@ -81,6 +81,10 @@ public class FlagFanEngine {
 				init();
 				continue;
 			}
+			if (command.equals("setboard")) {
+				setBoard(s.substring(8).trim());
+				continue;
+			}
 			if (command.equals("quit")) {
 				break;
 			}
@@ -131,16 +135,7 @@ public class FlagFanEngine {
 				continue;
 			}
 			if (command.equals("usermove")) {
-				int r1, f1, r2, f2;
-				r1 = (ss[1].charAt(1)-'0');
-				f1 = (ss[1].charAt(0)-'a')+3;
-				r2 = (ss[1].charAt(3)-'0');
-				f2 = (ss[1].charAt(2)-'a')+3;
-				r1 = 9-r1+3; r2 = 9-r2+3;
-				int src, dst;
-				src = (r1<<4)+f1;
-				dst = (r2<<4)+f2;
-				int move = (src<<8)+dst;
+				int move = Misc.ffMove(ss[1]);
 				usermove(move);
 				continue;
 			}
@@ -149,12 +144,8 @@ public class FlagFanEngine {
 	
 	void play() {
 		MyTimer timer = new MyTimer();
-//		log.println("movesLeft: "+movesLeft);
 		int m = movesLeft<=0 ? 40 : movesLeft;
-		long tlim = (long) ((0.6-0.06)*(timeLeft+(m-1)*timeInc)/(m+7));
-		if (tlim>timeLeft/15) tlim = timeLeft/15;
-		
-		tlim = (timeLeft+m*timeInc)/(m+1);
+		long tlim = (timeLeft+m*timeInc)/(m+1);
 		
 		search.setMaxDepth(maxDepth);
 		search.setTimeLimit(tlim);
@@ -190,9 +181,9 @@ public class FlagFanEngine {
 		System.out.println("Thinking...");
 		int move = search.findBestMove();
 		p.printMoveForHuman(move);
-		double nps = Evaluator.getInstance().nodeCount/(timer.elapsedTime()*0.001)*1e-6;
+		double nps = search.nodeCount/(timer.elapsedTime()*0.001)*1e-6;
 		timer.printElapsedTime();
-		System.out.println("Node Count = "+Evaluator.getInstance().nodeCount);
+		System.out.println("Node Count = "+search.nodeCount);
 		System.out.println("Node Per Second = "+String.valueOf(nps).substring(0, 5)+" millions");
 	}
 	
@@ -203,16 +194,20 @@ public class FlagFanEngine {
 	// GUI -> Engine
 	
 	void init() {
+		init(FEN.START_FEN);
+	}
+	
+	void init(String fen) {
 		FEN f;
 		try {
-			f = new FEN(FEN.START_FEN);
+			f = new FEN(fen);
 			p = new Position(f.getBoard90(), f.getTurn());
 			search = new Search(p);		
 		} catch (FENException e) {
 			e.printStackTrace();
 		}		
 		side = Piece.RED;
-		computer = Piece.BLACK;
+		computer = Piece.EMPTY;
 		timeLeft = maxTime;
 		movesLeft = maxMoves;
 		gamePtr = 0;
@@ -262,11 +257,15 @@ public class FlagFanEngine {
 		feature("usermove", "1");
 		feature("memory", "0");
 		feature("smp", "1");
-        feature("setboard", "0");
+        feature("setboard", "1");
         feature("ping", "1");
         feature("done", "0");
         feature("variants", "\"xiangqi\"");        
         feature("done", "1");
+	}
+	
+	void setBoard(String fen) {
+		init(fen);
 	}
 
 	void ping(int n) {
@@ -277,7 +276,6 @@ public class FlagFanEngine {
 		computer = side;
 		movesLeft = -(gamePtr + (side==Piece.RED?1:0)>>1);
 		while (maxMoves>0 && movesLeft<=0) movesLeft += maxMoves;
-//		log.println("DEBUG: "+maxMoves+" "+movesLeft);
 	}
 	
 	void usermove(int move) {

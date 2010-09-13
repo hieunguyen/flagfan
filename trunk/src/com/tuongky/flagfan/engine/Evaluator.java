@@ -1,13 +1,12 @@
 package com.tuongky.flagfan.engine;
 
-import static com.tuongky.flagfan.engine.Piece.*; 
 import com.tuongky.utils.FENException;
 
 public class Evaluator {
 
-	final static int[] PIECE_VALUES = {1000, 20, 25, 100, 50, 45, 10};
+	public final static int[] PIECE_VALUES = {10000, 200, 250, 1000, 500, 450, 100};
 	
-	final static int[][] POS_VALUES = {
+	public final static int[][] POS_VALUES = {
 		{
 		0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
 		0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
@@ -138,8 +137,6 @@ public class Evaluator {
 	
 	private static Evaluator instance = null;
 	
-	int nodeCount = 0;
-	
 	void initAll() {
 	}
 	
@@ -153,8 +150,7 @@ public class Evaluator {
 	}
 	
 	public int eval(Position p) {
-		int material = p.redPower - p.blackPower;
-		return p.turn==RED ?  material : -material;   
+		return p.material();   
 	}
 	
 	public static void main(String[] args) throws FENException {
