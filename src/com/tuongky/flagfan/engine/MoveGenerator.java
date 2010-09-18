@@ -2,16 +2,16 @@ package com.tuongky.flagfan.engine;
 
 import java.util.Arrays;
 
-import static com.tuongky.flagfan.engine.Position.*;
+import static com.tuongky.flagfan.engine.Constants.*;
 
 public class MoveGenerator {
 
-	final static int kingMoveTab[]		= {-0x10, -0x01, +0x01, +0x10};
-	final static int bishopMoveTab[]	= {-0x11, -0x0f, +0x0f, +0x11};
-	final static int elephantMoveTab[]	= {-0x22, -0x1e, +0x1e, +0x22};
-	final static int knightMoveTab[]	= {-0x21, -0x1f, -0x12, -0x0e, +0x0e, +0x12, +0x1f, +0x21};
+	public static final int[] KING_MOVE_TAB		= {-0x10, -0x01, +0x01, +0x10};
+	public static final int[] ADVISOR_MOVE_TAB	= {-0x11, -0x0f, +0x0f, +0x11};
+	public static final int[] ELEPHANT_MOVE_TAB	= {-0x22, -0x1e, +0x1e, +0x22};
+	public static final int[] HORSE_MOVE_TAB	= {-0x21, -0x1f, -0x12, -0x0e, +0x0e, +0x12, +0x1f, +0x21};
 	
-	final static int[] horseLegTab = 
+	public static final int[] HORSE_LEG_TAB = 
 	{
 	                               0,  0,  0,  0,  0,  0,  0,  0,  0,
 	   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
@@ -48,7 +48,44 @@ public class MoveGenerator {
 	   0,  0,  0,  0,  0,  0,  0
 	};	
 
-	final static int[] legalMoveTab =
+	public static final int[] REVERSE_HORSE_LEG_TAB = 
+	{
+	                               0,  0,  0,  0,  0,  0,  0,  0,  0,
+	   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+	   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+	   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+	   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+	   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+	   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+	   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+	   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+	   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+	   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+	   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+	   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+	   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+	   0,  0,  0,  0,  0,  0,-17,  0,-15,  0,  0,  0,  0,  0,  0,  0,
+	   0,  0,  0,  0,  0, -17, 0,  0,  0,-15,  0,  0,  0,  0,  0,  0,
+	   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+	   0,  0,  0,  0,  0, 15,  0,  0,  0, 17,  0,  0,  0,  0,  0,  0,
+	   0,  0,  0,  0,  0,  0, 15,  0, 17,  0,  0,  0,  0,  0,  0,  0,
+	   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+	   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+	   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+	   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+	   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+	   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+	   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+	   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+	   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+	   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+	   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+	   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+	   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+	   0,  0,  0,  0,  0,  0,  0
+	};	
+
+	public static final int[] LEGAL_MOVE_TAB =
 	{
 	                       0, 0, 0, 0, 0, 0, 0, 0, 0,
 	  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -85,67 +122,91 @@ public class MoveGenerator {
 	  0, 0, 0, 0, 0, 0, 0
 	};
 
-	int rookRankNoCapTab[][][] 	= new int[FILES][1<<FILES][2];
-	int rookRankCapTab[][][]	= new int[FILES][1<<FILES][2];
-	int cannonRankCapTab[][][]	= new int[FILES][1<<FILES][2];
+	public static final int ROOK_RANK_NO_CAP_TAB[][][] 	= new int[FILES][1<<FILES][2];
+	public static final int ROOK_RANK_CAP_TAB[][][]		= new int[FILES][1<<FILES][2];
+	public static final int CANNON_RANK_CAP_TAB[][][]	= new int[FILES][1<<FILES][2];
 
-	int rookFileNoCapTab[][][] 	= new int[RANKS][1<<RANKS][2];
-	int rookFileCapTab[][][]	= new int[RANKS][1<<RANKS][2];
-	int cannonFileCapTab[][][]	= new int[RANKS][1<<RANKS][2];
+	public static final int ROOK_FILE_NO_CAP_TAB[][][] 	= new int[RANKS][1<<RANKS][2];
+	public static final int ROOK_FILE_CAP_TAB[][][]		= new int[RANKS][1<<RANKS][2];
+	public static final int CANNON_FILE_CAP_TAB[][][]	= new int[RANKS][1<<RANKS][2];
 	
-	int rookRankNoCapMask[][]	= new int[FILES][1<<FILES];
-	int rookRankCapMask[][]		= new int[FILES][1<<FILES];
-	int cannonRankCapMask[][]	= new int[FILES][1<<FILES];
+	public static final int ROOK_RANK_NO_CAP_MASK[][]	= new int[FILES][1<<FILES];
+	public static final int ROOK_RANK_CAP_MASK[][]		= new int[FILES][1<<FILES];
+	public static final int CANNON_RANK_CAP_MASK[][]	= new int[FILES][1<<FILES];
 
-	int rookFileNoCapMask[][]	= new int[RANKS][1<<RANKS];
-	int rookFileCapMask[][]		= new int[RANKS][1<<RANKS];
-	int cannonFileCapMask[][]	= new int[RANKS][1<<RANKS];
+	public static final int ROOK_FILE_NO_CAP_MASK[][]	= new int[RANKS][1<<RANKS];
+	public static final int ROOK_FILE_CAP_MASK[][]		= new int[RANKS][1<<RANKS];
+	public static final int CANNON_FILE_CAP_MASK[][]	= new int[RANKS][1<<RANKS];
 	
 	
-	boolean[] inBoard 			= new boolean[BOARD_SIZE];
-	boolean[] inPalace 			= new boolean[BOARD_SIZE];
+	public static final boolean[] IN_BOARD 				= new boolean[BOARD_SIZE];
+	public static final boolean[] IN_PALACE 			= new boolean[BOARD_SIZE];
+	public static final boolean[] ADVISOR_REACHABLE		= new boolean[BOARD_SIZE];
+	public static final boolean[] ELEPHANT_REACHABLE	= new boolean[BOARD_SIZE];
 	
-	int[][] elephantEyes		= new int[BOARD_SIZE][5];
-	int[][] horseLegs			= new int[BOARD_SIZE][10];
+	public static final int[][] ELEPHANT_EYES			= new int[BOARD_SIZE][5];
+	public static final int[][] HORSE_LEGS				= new int[BOARD_SIZE][10];
 	
-	int[][][] pawnMoves 		= new int[BOARD_SIZE][2][5];
-	int[][] bishopMoves 		= new int[BOARD_SIZE][5];
-	int[][] elephantMoves 		= new int[BOARD_SIZE][5];
-	int[][] knightMoves			= new int[BOARD_SIZE][10];
-	int[][] kingMoves			= new int[BOARD_SIZE][5];
+	public static final int[][][] PAWN_MOVES 			= new int[BOARD_SIZE][2][5];
+	public static final int[][] ADVISOR_MOVES 			= new int[BOARD_SIZE][5];
+	public static final int[][] ELEPHANT_MOVES 			= new int[BOARD_SIZE][5];
+	public static final int[][] HORSE_MOVES				= new int[BOARD_SIZE][10];
+	public static final int[][] KING_MOVES				= new int[BOARD_SIZE][5];
 	
 	private static MoveGenerator instance = null;
 	
 	void initInBoard() {
-		Arrays.fill(inBoard, false);
+		Arrays.fill(IN_BOARD, false);
 		for (int i=3; i<3+RANKS; i++)
-		for (int j=3; j<3+FILES; j++) inBoard[(i<<4)+j] = true;
+		for (int j=3; j<3+FILES; j++) IN_BOARD[(i<<4)+j] = true;
 	}
 	
-	void initInPalace() {
-		Arrays.fill(inPalace, false);		
+	void initReachable() {
+		Arrays.fill(IN_PALACE, false);		
+		Arrays.fill(ADVISOR_REACHABLE, false);
 		for (int j=6; j<=8; j++) {
-			for (int i=3; i<=5; i++) inPalace[(i<<4)+j] = true;
-			for (int i=10; i<=12; i++) inPalace[(i<<4)+j] = true;
-		}		
+			for (int i=3; i<=5; i++) {
+				IN_PALACE[(i<<4)+j] = true;
+				if ((i+j)%2==1) ADVISOR_REACHABLE[(i<<4)+j] = true;
+			}
+			for (int i=10; i<=12; i++) {
+				IN_PALACE[(i<<4)+j] = true;
+				if ((i+j)%2==0) ADVISOR_REACHABLE[(i<<4)+j] = true;
+			}
+		}
+		Arrays.fill(ELEPHANT_REACHABLE, false);
+		for (int j=3; j<=7; j+=2) {
+			for (int i=3; i<=7; i+=2) {
+				int u, v;
+				u = (i-3)/2;
+				v = (j-3)/2;
+				if ((u+v)%2==1) ELEPHANT_REACHABLE[(i<<4)+j] = true;
+			}
+			for (int i=8; i<=12; i+=2) {
+				int u, v;
+				u = (i-3)/2;
+				v = (j-3)/2;
+				if ((u+v)%2==1) ELEPHANT_REACHABLE[(i<<4)+j] = true;
+			}
+		}
 	}
 	
 	void initKingBishopMoves() {
 		// King & Bishop
 		int src, dst, cc;		
 		for (src=0; src<BOARD_SIZE; src++) {
-			Arrays.fill(kingMoves[src], 0);
-			Arrays.fill(bishopMoves[src], 0);
-			if (inPalace[src]) {
+			Arrays.fill(KING_MOVES[src], 0);
+			Arrays.fill(ADVISOR_MOVES[src], 0);
+			if (IN_PALACE[src]) {
 				cc = 0;
-				for (int i=0; i<kingMoveTab.length; i++) {
-					dst = src + kingMoveTab[i];
-					if (inPalace[dst]) kingMoves[src][cc++] = dst;
+				for (int i=0; i<KING_MOVE_TAB.length; i++) {
+					dst = src + KING_MOVE_TAB[i];
+					if (IN_PALACE[dst]) KING_MOVES[src][cc++] = dst;
 				}
 				cc = 0;
-				for (int i=0; i<bishopMoveTab.length; i++) {
-					dst = src + bishopMoveTab[i];
-					if (inPalace[dst]) bishopMoves[src][cc++] = dst;
+				for (int i=0; i<ADVISOR_MOVE_TAB.length; i++) {
+					dst = src + ADVISOR_MOVE_TAB[i];
+					if (IN_PALACE[dst]) ADVISOR_MOVES[src][cc++] = dst;
 				}
 			}
 		}
@@ -155,27 +216,27 @@ public class MoveGenerator {
 		// Elephant, Knight & Pawn		
 		int src, dst, cc;		
 		for (src=0; src<BOARD_SIZE; src++) {
-			Arrays.fill(elephantMoves[src], 0);
-			Arrays.fill(knightMoves[src], 0);
-			Arrays.fill(pawnMoves[src][0], 0);
-			Arrays.fill(pawnMoves[src][1], 0);
-			if (inBoard[src]) {
+			Arrays.fill(ELEPHANT_MOVES[src], 0);
+			Arrays.fill(HORSE_MOVES[src], 0);
+			Arrays.fill(PAWN_MOVES[src][0], 0);
+			Arrays.fill(PAWN_MOVES[src][1], 0);
+			if (IN_BOARD[src]) {
 				cc = 0;
-				for (int i=0; i<elephantMoveTab.length; i++) {
-					dst = src + elephantMoveTab[i];
-					if (inBoard[dst]&&((src^dst)&0x80)==0) {
-						elephantMoves[src][cc] = dst;
-						elephantEyes[src][cc] = (src+dst) >> 1;
+				for (int i=0; i<ELEPHANT_MOVE_TAB.length; i++) {
+					dst = src + ELEPHANT_MOVE_TAB[i];
+					if (IN_BOARD[dst]&&((src^dst)&0x80)==0) {
+						ELEPHANT_MOVES[src][cc] = dst;
+						ELEPHANT_EYES[src][cc] = (src+dst) >> 1;
 						cc++;
 					}
 				}
 				
 				cc = 0;
-				for (int i=0; i<knightMoveTab.length; i++) {
-					dst = src + knightMoveTab[i];
-					if (inBoard[dst]) {
-						knightMoves[src][cc] = dst;
-						horseLegs[src][cc] = src + horseLegTab[dst-src+BOARD_SIZE];
+				for (int i=0; i<HORSE_MOVE_TAB.length; i++) {
+					dst = src + HORSE_MOVE_TAB[i];
+					if (IN_BOARD[dst]) {
+						HORSE_MOVES[src][cc] = dst;
+						HORSE_LEGS[src][cc] = src + HORSE_LEG_TAB[dst-src+BOARD_SIZE];
 						cc++;
 					}
 				}
@@ -183,12 +244,12 @@ public class MoveGenerator {
 				for (int i=0; i<2; i++) {
 					cc = 0;
 					if (i==0) dst = src - 16; else dst = src + 16;
-					if (inBoard[dst]) pawnMoves[src][i][cc++] = dst;
+					if (IN_BOARD[dst]) PAWN_MOVES[src][i][cc++] = dst;
 					
 					if (i==0 ? (src&0x80)==0 : (src&0x80)!=0) {
 						for (int j=-1; j<=1; j+=2) {
 							dst = src + j;
-							if (inBoard[dst]) pawnMoves[src][i][cc++] = dst;
+							if (IN_BOARD[dst]) PAWN_MOVES[src][i][cc++] = dst;
 						}
 					}
 				}
@@ -202,44 +263,44 @@ public class MoveGenerator {
 		// RANK
 		for (int i=0; i<FILES; i++)
 		for (int j=0; j<1<<FILES; j++) {
-			rookRankNoCapTab[i][j][0] = rookRankNoCapTab[i][j][1] = i+3;
-			rookRankCapTab[i][j][0] = rookRankCapTab[i][j][1] = i+3;
-			cannonRankCapTab[i][j][0] = cannonRankCapTab[i][j][1] = i+3;
-			rookRankNoCapMask[i][j] = rookRankCapMask[i][j] = cannonRankCapMask[i][j] = 0;
+			ROOK_RANK_NO_CAP_TAB[i][j][0] = ROOK_RANK_NO_CAP_TAB[i][j][1] = i+3;
+			ROOK_RANK_CAP_TAB[i][j][0] = ROOK_RANK_CAP_TAB[i][j][1] = i+3;
+			CANNON_RANK_CAP_TAB[i][j][0] = CANNON_RANK_CAP_TAB[i][j][1] = i+3;
+			ROOK_RANK_NO_CAP_MASK[i][j] = ROOK_RANK_CAP_MASK[i][j] = CANNON_RANK_CAP_MASK[i][j] = 0;
 			
 			int k;
 
 			for (k=i+1; k<FILES; k++) {
 				if ((j>>k&1)!=0) {
-					rookRankCapTab[i][j][0] = k+3;
-					rookRankCapMask[i][j] |= 1<<(k+3);
+					ROOK_RANK_CAP_TAB[i][j][0] = k+3;
+					ROOK_RANK_CAP_MASK[i][j] |= 1<<(k+3);
 					break;
 				}
-				rookRankNoCapTab[i][j][0] = k+3;
-				rookRankNoCapMask[i][j] |= 1<<(k+3);
+				ROOK_RANK_NO_CAP_TAB[i][j][0] = k+3;
+				ROOK_RANK_NO_CAP_MASK[i][j] |= 1<<(k+3);
 			}
 			
 			for (k++; k<FILES; k++)
 			if ((j>>k&1)!=0) {
-				cannonRankCapTab[i][j][0] = k+3;
-				cannonRankCapMask[i][j] |= 1<<(k+3);
+				CANNON_RANK_CAP_TAB[i][j][0] = k+3;
+				CANNON_RANK_CAP_MASK[i][j] |= 1<<(k+3);
 				break;
 			}
 
 			for (k=i-1; k>=0; k--) {
 				if ((j>>k&1)!=0) {
-					rookRankCapTab[i][j][1] = k+3;
-					rookRankCapMask[i][j] |= 1<<(k+3);
+					ROOK_RANK_CAP_TAB[i][j][1] = k+3;
+					ROOK_RANK_CAP_MASK[i][j] |= 1<<(k+3);
 					break;
 				}
-				rookRankNoCapTab[i][j][1] = k+3;
-				rookRankNoCapMask[i][j] |= 1<<(k+3);
+				ROOK_RANK_NO_CAP_TAB[i][j][1] = k+3;
+				ROOK_RANK_NO_CAP_MASK[i][j] |= 1<<(k+3);
 			}
 			
 			for (k--; k>=0; k--)
 			if ((j>>k&1)!=0) {
-				cannonRankCapTab[i][j][1] = k+3;
-				cannonRankCapMask[i][j] |= 1<<(k+3);
+				CANNON_RANK_CAP_TAB[i][j][1] = k+3;
+				CANNON_RANK_CAP_MASK[i][j] |= 1<<(k+3);
 				break;
 			}
 			
@@ -248,44 +309,44 @@ public class MoveGenerator {
 		// FILE
 		for (int i=0; i<RANKS; i++)
 		for (int j=0; j<1<<RANKS; j++) {
-			rookFileNoCapTab[i][j][0] = rookFileNoCapTab[i][j][1] = i+3;
-			rookFileCapTab[i][j][0] = rookFileCapTab[i][j][1] = i+3;
-			cannonFileCapTab[i][j][0] = cannonFileCapTab[i][j][1] = i+3;
-			rookFileNoCapMask[i][j] = rookFileCapMask[i][j] = cannonFileCapMask[i][j] = 0;
+			ROOK_FILE_NO_CAP_TAB[i][j][0] = ROOK_FILE_NO_CAP_TAB[i][j][1] = i+3;
+			ROOK_FILE_CAP_TAB[i][j][0] = ROOK_FILE_CAP_TAB[i][j][1] = i+3;
+			CANNON_FILE_CAP_TAB[i][j][0] = CANNON_FILE_CAP_TAB[i][j][1] = i+3;
+			ROOK_FILE_NO_CAP_MASK[i][j] = ROOK_FILE_CAP_MASK[i][j] = CANNON_FILE_CAP_MASK[i][j] = 0;
 			
 			int k;
 
 			for (k=i+1; k<RANKS; k++) {
 				if ((j>>k&1)!=0) {
-					rookFileCapTab[i][j][0] = k+3;
-					rookFileCapMask[i][j] |= 1<<(k+3);
+					ROOK_FILE_CAP_TAB[i][j][0] = k+3;
+					ROOK_FILE_CAP_MASK[i][j] |= 1<<(k+3);
 					break;
 				}
-				rookFileNoCapTab[i][j][0] = k+3;
-				rookFileNoCapMask[i][j] |= 1<<(k+3);
+				ROOK_FILE_NO_CAP_TAB[i][j][0] = k+3;
+				ROOK_FILE_NO_CAP_MASK[i][j] |= 1<<(k+3);
 			}
 			
 			for (k++; k<RANKS; k++)
 			if ((j>>k&1)!=0) {
-				cannonFileCapTab[i][j][0] = k+3;
-				cannonFileCapMask[i][j] |= 1<<(k+3);
+				CANNON_FILE_CAP_TAB[i][j][0] = k+3;
+				CANNON_FILE_CAP_MASK[i][j] |= 1<<(k+3);
 				break;
 			}
 
 			for (k=i-1; k>=0; k--) {
 				if ((j>>k&1)!=0) {
-					rookFileCapTab[i][j][1] = k+3;
-					rookFileCapMask[i][j] |= 1<<(k+3);
+					ROOK_FILE_CAP_TAB[i][j][1] = k+3;
+					ROOK_FILE_CAP_MASK[i][j] |= 1<<(k+3);
 					break;
 				}
-				rookFileNoCapTab[i][j][1] = k+3;
-				rookFileNoCapMask[i][j] |= 1<<(k+3);
+				ROOK_FILE_NO_CAP_TAB[i][j][1] = k+3;
+				ROOK_FILE_NO_CAP_MASK[i][j] |= 1<<(k+3);
 			}
 			
 			for (k--; k>=0; k--)
 			if ((j>>k&1)!=0) {
-				cannonFileCapTab[i][j][1] = k+3;
-				cannonFileCapMask[i][j] |= 1<<(k+3);
+				CANNON_FILE_CAP_TAB[i][j][1] = k+3;
+				CANNON_FILE_CAP_MASK[i][j] |= 1<<(k+3);
 				break;
 			}
 			
@@ -294,7 +355,7 @@ public class MoveGenerator {
 	
 	void initAll() {
 		initInBoard();
-		initInPalace();
+		initReachable();
 		initKingBishopMoves();
 		initElephanKnightPawnMoves();
 		initRookCannonMoves();
@@ -322,7 +383,7 @@ public class MoveGenerator {
 		
 		// KING
 		src = pieces[pieceTag];
-		moves = kingMoves[src];
+		moves = KING_MOVES[src];
 		if (src!=0) {
 			ind = 0;
 			dst = moves[ind];
@@ -335,10 +396,10 @@ public class MoveGenerator {
 			}
 		}
 		
-		// BISHOP
+		// ADVISOR
 		for (int i=1; i<=2; i++) {
 			src = pieces[pieceTag+i];
-			moves = bishopMoves[src];
+			moves = ADVISOR_MOVES[src];
 			if (src!=0) {
 				ind = 0;
 				dst = moves[ind];
@@ -357,10 +418,10 @@ public class MoveGenerator {
 			src = pieces[pieceTag+i];
 			if (src!=0) {
 				ind = 0;
-				moves = elephantMoves[src];
+				moves = ELEPHANT_MOVES[src];
 				dst = moves[ind];				
 				while (dst!=0) {
-					int ee = elephantEyes[src][ind];
+					int ee = ELEPHANT_EYES[src][ind];
 					if (board[ee]==0&&(board[dst]&pieceTag)==0) {
 						moveList[num++] = src<<8|dst;
 					}
@@ -384,25 +445,25 @@ public class MoveGenerator {
 				
 				// HORIZONTAL
 				
-				y = rookRankNoCapTab[file-3][bitRank][0];
+				y = ROOK_RANK_NO_CAP_TAB[file-3][bitRank][0];
 				while (y>file) {
 					moveList[num++] = src<<8|rank<<4|y;
 					y--;
 				}
 
-				y = rookRankNoCapTab[file-3][bitRank][1];
+				y = ROOK_RANK_NO_CAP_TAB[file-3][bitRank][1];
 				while (y<file) {
 					moveList[num++] = src<<8|rank<<4|y;
 					y++;
 				}
 				
-				y = rookRankCapTab[file-3][bitRank][0];
+				y = ROOK_RANK_CAP_TAB[file-3][bitRank][0];
 				dst = rank<<4|y;
 				if (y!=file&&(board[dst]&pieceTag)==0) {
 					moveList[num++] = src<<8|dst;
 				}
 				
-				y = rookRankCapTab[file-3][bitRank][1];
+				y = ROOK_RANK_CAP_TAB[file-3][bitRank][1];
 				dst = rank<<4|y;
 				if (y!=file&&(board[dst]&pieceTag)==0) {
 					moveList[num++] = src<<8|dst;
@@ -410,25 +471,25 @@ public class MoveGenerator {
 				
 				// VERTICAL
 				
-				x = rookFileNoCapTab[rank-3][bitFile][0];
+				x = ROOK_FILE_NO_CAP_TAB[rank-3][bitFile][0];
 				while (x>rank) {
 					moveList[num++] = src<<8|x<<4|file;
 					x--;
 				}
 
-				x = rookFileNoCapTab[rank-3][bitFile][1];
+				x = ROOK_FILE_NO_CAP_TAB[rank-3][bitFile][1];
 				while (x<rank) {
 					moveList[num++] = src<<8|x<<4|file;
 					x++;
 				}
 				
-				x = rookFileCapTab[rank-3][bitFile][0];
+				x = ROOK_FILE_CAP_TAB[rank-3][bitFile][0];
 				dst = x<<4|file;
 				if (x!=rank&&(board[dst]&pieceTag)==0) {
 					moveList[num++] = src<<8|dst;
 				}
 				
-				x = rookFileCapTab[rank-3][bitFile][1];
+				x = ROOK_FILE_CAP_TAB[rank-3][bitFile][1];
 				dst = x<<4|file;
 				if (x!=rank&&(board[dst]&pieceTag)==0) {
 					moveList[num++] = src<<8|dst;
@@ -451,25 +512,25 @@ public class MoveGenerator {
 				
 				// HORIZONTAL
 				
-				y = rookRankNoCapTab[file-3][bitRank][0];
+				y = ROOK_RANK_NO_CAP_TAB[file-3][bitRank][0];
 				while (y>file) {
 					moveList[num++] = src<<8|rank<<4|y;
 					y--;
 				}
 
-				y = rookRankNoCapTab[file-3][bitRank][1];
+				y = ROOK_RANK_NO_CAP_TAB[file-3][bitRank][1];
 				while (y<file) {
 					moveList[num++] = src<<8|rank<<4|y;
 					y++;
 				}
 				
-				y = cannonRankCapTab[file-3][bitRank][0];
+				y = CANNON_RANK_CAP_TAB[file-3][bitRank][0];
 				dst = rank<<4|y;
 				if (y!=file&&(board[dst]&pieceTag)==0) {
 					moveList[num++] = src<<8|dst;
 				}
 				
-				y = cannonRankCapTab[file-3][bitRank][1];
+				y = CANNON_RANK_CAP_TAB[file-3][bitRank][1];
 				dst = rank<<4|y;
 				if (y!=file&&(board[dst]&pieceTag)==0) {
 					moveList[num++] = src<<8|dst;
@@ -477,25 +538,25 @@ public class MoveGenerator {
 				
 				// VERTICAL
 				
-				x = rookFileNoCapTab[rank-3][bitFile][0];
+				x = ROOK_FILE_NO_CAP_TAB[rank-3][bitFile][0];
 				while (x>rank) {
 					moveList[num++] = src<<8|x<<4|file;
 					x--;
 				}
 
-				x = rookFileNoCapTab[rank-3][bitFile][1];
+				x = ROOK_FILE_NO_CAP_TAB[rank-3][bitFile][1];
 				while (x<rank) {
 					moveList[num++] = src<<8|x<<4|file;
 					x++;
 				}
 				
-				x = cannonFileCapTab[rank-3][bitFile][0];
+				x = CANNON_FILE_CAP_TAB[rank-3][bitFile][0];
 				dst = x<<4|file;
 				if (x!=rank&&(board[dst]&pieceTag)==0) {
 					moveList[num++] = src<<8|dst;
 				}
 				
-				x = cannonFileCapTab[rank-3][bitFile][1];
+				x = CANNON_FILE_CAP_TAB[rank-3][bitFile][1];
 				dst = x<<4|file;
 				if (x!=rank&&(board[dst]&pieceTag)==0) {
 					moveList[num++] = src<<8|dst;
@@ -509,10 +570,10 @@ public class MoveGenerator {
 			src = pieces[pieceTag+i];
 			if (src!=0) {
 				ind = 0;
-				moves = knightMoves[src];
+				moves = HORSE_MOVES[src];
 				dst = moves[ind];
 				while (dst!=0) {
-					int hleg = horseLegs[src][ind];
+					int hleg = HORSE_LEGS[src][ind];
 					if (board[hleg]==0&&(board[dst]&pieceTag)==0) {
 						moveList[num++] = (src<<8)+dst;
 					}
@@ -527,7 +588,7 @@ public class MoveGenerator {
 			src = pieces[pieceTag+i];
 			if (src!=0) {
 				ind = 0;
-				moves = pawnMoves[src][p.turn]; 
+				moves = PAWN_MOVES[src][p.turn]; 
 				dst = moves[ind];
 				while (dst!=0) {
 					if ((board[dst]&pieceTag)==0) {
@@ -556,7 +617,7 @@ public class MoveGenerator {
 		
 		// KING
 		src = pieces[pieceTag];
-		moves = kingMoves[src];
+		moves = KING_MOVES[src];
 		if (src!=0) {
 			ind = 0;
 			dst = moves[ind];
@@ -569,10 +630,10 @@ public class MoveGenerator {
 			}
 		}
 		
-		// BISHOP
+		// ADVISOR
 		for (int i=1; i<=2; i++) {
 			src = pieces[pieceTag+i];
-			moves = bishopMoves[src];
+			moves = ADVISOR_MOVES[src];
 			if (src!=0) {
 				ind = 0;
 				dst = moves[ind];
@@ -591,10 +652,10 @@ public class MoveGenerator {
 			src = pieces[pieceTag+i];
 			if (src!=0) {
 				ind = 0;
-				moves = elephantMoves[src];
+				moves = ELEPHANT_MOVES[src];
 				dst = moves[ind];				
 				while (dst!=0) {
-					int ee = elephantEyes[src][ind];
+					int ee = ELEPHANT_EYES[src][ind];
 					if (board[ee]==0&&(board[dst]&oppTag)!=0) {
 						moveList[num++] = src<<8|dst;
 					}
@@ -618,13 +679,13 @@ public class MoveGenerator {
 				
 				// HORIZONTAL
 				
-				y = rookRankCapTab[file-3][bitRank][0];
+				y = ROOK_RANK_CAP_TAB[file-3][bitRank][0];
 				dst = rank<<4|y;
 				if (y!=file&&(board[dst]&oppTag)!=0) {
 					moveList[num++] = src<<8|dst;
 				}
 				
-				y = rookRankCapTab[file-3][bitRank][1];
+				y = ROOK_RANK_CAP_TAB[file-3][bitRank][1];
 				dst = rank<<4|y;
 				if (y!=file&&(board[dst]&oppTag)!=0) {
 					moveList[num++] = src<<8|dst;
@@ -632,13 +693,13 @@ public class MoveGenerator {
 				
 				// VERTICAL
 				
-				x = rookFileCapTab[rank-3][bitFile][0];
+				x = ROOK_FILE_CAP_TAB[rank-3][bitFile][0];
 				dst = x<<4|file;
 				if (x!=rank&&(board[dst]&oppTag)!=0) {
 					moveList[num++] = src<<8|dst;
 				}
 				
-				x = rookFileCapTab[rank-3][bitFile][1];
+				x = ROOK_FILE_CAP_TAB[rank-3][bitFile][1];
 				dst = x<<4|file;
 				if (x!=rank&&(board[dst]&oppTag)!=0) {
 					moveList[num++] = src<<8|dst;
@@ -661,13 +722,13 @@ public class MoveGenerator {
 				
 				// HORIZONTAL
 				
-				y = cannonRankCapTab[file-3][bitRank][0];
+				y = CANNON_RANK_CAP_TAB[file-3][bitRank][0];
 				dst = rank<<4|y;
 				if (y!=file&&(board[dst]&oppTag)!=0) {
 					moveList[num++] = src<<8|dst;
 				}
 				
-				y = cannonRankCapTab[file-3][bitRank][1];
+				y = CANNON_RANK_CAP_TAB[file-3][bitRank][1];
 				dst = rank<<4|y;
 				if (y!=file&&(board[dst]&oppTag)!=0) {
 					moveList[num++] = src<<8|dst;
@@ -675,13 +736,13 @@ public class MoveGenerator {
 				
 				// VERTICAL
 				
-				x = cannonFileCapTab[rank-3][bitFile][0];
+				x = CANNON_FILE_CAP_TAB[rank-3][bitFile][0];
 				dst = x<<4|file;
 				if (x!=rank&&(board[dst]&oppTag)!=0) {
 					moveList[num++] = src<<8|dst;
 				}
 				
-				x = cannonFileCapTab[rank-3][bitFile][1];
+				x = CANNON_FILE_CAP_TAB[rank-3][bitFile][1];
 				dst = x<<4|file;
 				if (x!=rank&&(board[dst]&oppTag)!=0) {
 					moveList[num++] = src<<8|dst;
@@ -695,10 +756,10 @@ public class MoveGenerator {
 			src = pieces[pieceTag+i];
 			if (src!=0) {
 				ind = 0;
-				moves = knightMoves[src];
+				moves = HORSE_MOVES[src];
 				dst = moves[ind];
 				while (dst!=0) {
-					int hleg = horseLegs[src][ind];
+					int hleg = HORSE_LEGS[src][ind];
 					if (board[hleg]==0&&(board[dst]&oppTag)!=0) {
 						moveList[num++] = (src<<8)+dst;
 					}
@@ -713,7 +774,7 @@ public class MoveGenerator {
 			src = pieces[pieceTag+i];
 			if (src!=0) {
 				ind = 0;
-				moves = pawnMoves[src][p.turn]; 
+				moves = PAWN_MOVES[src][p.turn]; 
 				dst = moves[ind];
 				while (dst!=0) {
 					if ((board[dst]&oppTag)!=0) {
@@ -728,144 +789,4 @@ public class MoveGenerator {
 		return num;
 	}
 
-	boolean legalMove(Position p, int move) {
-		int[] board = p.board;
-		int src, dst, rank, file;
-		int pieceTag, movedPiece, capturedPiece;
-		
-		src = (move>>8)&0xff;
-		dst = move&0xff;
-		pieceTag = 16 + (p.turn<<4);
-		movedPiece = board[src];
-		capturedPiece = board[dst];
-		
-		if ((movedPiece&pieceTag)==0) return false;
-		if ((capturedPiece&pieceTag)!=0) return false;
-		
-		switch (PIECE_TYPES[movedPiece]) {
-			case 0: // KING
-				return inPalace[dst] && legalMoveTab[dst-src+256]==1;
-			case 1: // BISHOP
-				return inPalace[dst] && legalMoveTab[dst-src+256]==2;
-			case 2: // ELEPHANT
-				return ((src^dst)&0x80)==0 && legalMoveTab[dst-src+256]==3 && board[(src+dst)>>1]==0;
-			case 3: // ROOK
-				rank = src >> 4;
-				file = src & 0xf;				
-				if (file==(dst&0xf)) {					
-					if (capturedPiece==0) {						
-						return (rookFileNoCapMask[rank-3][p.bitFiles[file]>>3] & (1 << (dst>>4))) != 0;
-					} else {
-						return (rookFileCapMask[rank-3][p.bitFiles[file]>>3] & (1 << (dst>>4))) != 0;
-					}
-				} else
-				if (rank==(dst>>4)) {
-					if (capturedPiece==0) {
-						return (rookRankNoCapMask[file-3][p.bitRanks[rank]>>3] & (1 << (dst&0xf))) != 0;
-					} else {
-						return (rookRankCapMask[file-3][p.bitRanks[rank]>>3] & (1 << (dst&0xf))) != 0;
-					}
-				}
-				return false;
-			case 4: // CANNON
-				rank = src >> 4;
-				file = src & 0xf;
-				if (file==(dst&0xf)) {
-					if (capturedPiece==0) {
-						return (rookFileNoCapMask[rank-3][p.bitFiles[file]>>3] & (1 << (dst>>4))) != 0;
-					} else {
-						return (cannonFileCapMask[rank-3][p.bitFiles[file]>>3] & (1 << (dst>>4))) != 0;
-					}
-				} else
-				if (rank==(dst>>4)) {
-					if (capturedPiece==0) {
-						return (rookRankNoCapMask[file-3][p.bitRanks[rank]>>3] & (1 << (dst&0xf))) != 0;
-					} else {
-						return (cannonRankCapMask[file-3][p.bitRanks[rank]>>3] & (1 << (dst&0xf))) != 0;
-					}
-				}
-				return false;
-			case 5: // KNIGHT
-				int hleg = horseLegTab[dst-src+256];
-				return hleg!=0 && board[src+hleg]==0;
-			default: // PAWN
-				if (pieceTag==16)
-					return dst==src-16 || ((dst&0x80)==0&&Math.abs(dst-src)==1);
-				else
-					return dst==src+16 || ((dst&0x80)!=0&&Math.abs(dst-src)==1);
-		}
-	}
-	
-	public boolean isChecked(Position p, int side) {
-		int[] board = p.board;
-		int[] pieces = p.pieces;
-		int[] bitFiles = p.bitFiles;
-		int[] bitRanks = p.bitRanks;
-		int src, dst, rank, file, pieceTag, y;
-		
-		pieceTag = 32 - (side<<4);
-		src = pieces[48-pieceTag]; // KING
-		
-		rank = src >> 4;
-		file = src & 0xf;
-
-		// KING kills KING
-		dst = pieces[pieceTag];
-		if (dst!=0) {
-			y = dst & 0xf;
-			if (y==file&&(rookFileCapMask[rank-3][bitFiles[file]>>3]&(1<<(dst>>4)))!=0) return true;
-		}
-		
-		// ROOK kills KING
-		for (int i=5; i<=6; i++) {
-			dst = pieces[pieceTag+i];
-			if (dst!=0) {
-				if ((dst>>4)==rank) {
-					if ((rookRankCapMask[file-3][bitRanks[rank]>>3]&(1<<(dst&0xf)))!=0) return true;
-				} else
-				if ((dst&0xf)==file) {
-					if ((rookFileCapMask[rank-3][bitFiles[file]>>3]&(1<<(dst>>4)))!=0) return true;
-				}
-			}
-		}
-		
-	
-		// CANNON kills KING
-		for (int i=7; i<=8; i++) {
-			dst = pieces[pieceTag+i];
-			if (dst!=0) {
-				if ((dst>>4)==rank) {
-					if ((cannonRankCapMask[file-3][bitRanks[rank]>>3]&(1<<(dst&0xf)))!=0) return true;
-				} else
-				if ((dst&0xf)==file) {
-					if ((cannonFileCapMask[rank-3][bitFiles[file]>>3]&(1<<(dst>>4)))!=0) return true;
-				}
-			}			
-		}
-		
-	
-		// KNIGHT kills KING
-		for (int i=9; i<=10; i++) {
-			dst = pieces[pieceTag+i];
-			if (dst!=0) {
-				int hleg = horseLegTab[src-dst+256];
-				if (hleg!=0&&board[dst+hleg]==0) return true;
-			}
-		}
-
-		// PAWN kills KING
-		int ptmp;
-		
-		ptmp = board[src-1];
-		if ((ptmp&pieceTag)!=0&&Position.PIECE_TYPES[ptmp]==6) return true;
-
-		ptmp = board[src+1];
-		if ((ptmp&pieceTag)!=0&&Position.PIECE_TYPES[ptmp]==6) return true;
-		
-		ptmp = board[src-16+(side<<5)];
-		if ((ptmp&pieceTag)!=0&&Position.PIECE_TYPES[ptmp]==6) return true;
-		
-		return false;
-	}
-	
 }

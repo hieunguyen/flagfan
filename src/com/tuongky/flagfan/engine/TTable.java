@@ -1,8 +1,8 @@
 package com.tuongky.flagfan.engine;
 
+import static com.tuongky.flagfan.engine.Constants.*;
+
 public class TTable {
-	
-	final static int TSIZE = 1<<20;
 	
 	TTEntry[] data;
 	

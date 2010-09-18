@@ -1,10 +1,14 @@
 package com.tuongky.flagfan.engine;
 
+import static com.tuongky.flagfan.engine.Constants.*;
+
 import com.tuongky.utils.FENException;
 
 public class Evaluator {
 
 	public final static int[] PIECE_VALUES = {10000, 200, 250, 1000, 500, 450, 100};
+	
+	public final static int[][] PIECE_POS_VALUES = new int[48][BOARD_SIZE];
 	
 	public final static int[][] POS_VALUES = {
 		{
@@ -137,7 +141,16 @@ public class Evaluator {
 	
 	private static Evaluator instance = null;
 	
+	void initPiecePosValues() {
+		for (int piece=16; piece<48; piece++) 
+			for (int square=16; square<BOARD_SIZE-16; square++) {
+				int pType = PIECE_TYPES[piece];
+				PIECE_POS_VALUES[piece][square] = piece<32 ? POS_VALUES[pType][square] : -POS_VALUES[pType][254-square]; 
+			}
+	}
+	
 	void initAll() {
+		initPiecePosValues();
 	}
 	
 	private Evaluator() {
@@ -150,11 +163,13 @@ public class Evaluator {
 	}
 	
 	public int eval(Position p) {
-		return p.material();   
+		return p.getMeterial(); 
 	}
 	
 	public static void main(String[] args) throws FENException {
-		String fen = "rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RHEAKAEHR w";
+		String fen = "r1eakae2/5r3/h3c1hc1/p1C1p3C/6p2/9/P1P1P1P1P/4E4/R4H3/1HEAKA2R w 0 7";
+//		String fen = "rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RHEAKAEHR w";
+		Evaluator.getInstance();
 		Position p = new Position(fen);
 		System.out.println(getInstance().eval(p));
 	}

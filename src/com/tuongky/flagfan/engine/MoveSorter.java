@@ -1,10 +1,19 @@
 package com.tuongky.flagfan.engine;
 
 import static com.tuongky.flagfan.engine.Evaluator.*;
-import static com.tuongky.flagfan.engine.Position.*;
+import static com.tuongky.flagfan.engine.Constants.*;
 
 public class MoveSorter {
 
+	/*
+	 *  ORDER:
+	 *  1. Hash Table
+	 *  2. Mate Killer
+	 *  3. Good Captures (SEE>=0) MVV/LVA
+	 *  4. Non-Captures History Table
+	 *  5. Bad Captures (SEE<0)
+	 */
+	
 	final static int MOVE_SORT_RANGE = 7;
 	
 	Position p;
