@@ -12,6 +12,8 @@ import com.tuongky.utils.FENException;
 import com.tuongky.utils.Misc;
 import com.tuongky.utils.MyTimer;
 
+import static com.tuongky.flagfan.engine.Constants.*;
+
 public class FlagFanEngine {
 
 	final static String MY_NAME 	= "FlagFan 1.0";
@@ -38,15 +40,22 @@ public class FlagFanEngine {
 	int maxDepth;
 	int gamePtr;
 	
+	void initSingletons() {
+		MoveGenerator.getInstance();
+		Evaluator.getInstance();
+		Zobrist.getInstance();
+	}
+	
 	void initAll() {
 		maxTime = 10*1000; // 10s
 		maxDepth = 50;		
 		br = new BufferedReader(new InputStreamReader(System.in));
 		out = new PrintStream(System.out, true);
-		side = Piece.RED;
-		computer = Piece.EMPTY;
+		side = RED;
+		computer = EMPTY;
 		out.println("tellics say 	"+MY_NAME);
 		out.println("tellics say 	by "+AUTHOR);
+		initSingletons();
 	}
 	
 	void mainLoop() throws IOException {
@@ -168,7 +177,7 @@ public class FlagFanEngine {
 	
 	void resign() {
 		out.println("resign");
-		computer = Piece.EMPTY; 
+		computer = EMPTY; 
 	}
 	
 	public FlagFanEngine() throws IOException {
@@ -180,7 +189,7 @@ public class FlagFanEngine {
 		MyTimer timer = new MyTimer();
 		System.out.println("Thinking...");
 		int move = search.findBestMove();
-		p.printMoveForHuman(move);
+		Misc.printMoveForHuman(p, move);
 		double nps = search.nodeCount/(timer.elapsedTime()*0.001)*1e-6;
 		timer.printElapsedTime();
 		System.out.println("Node Count = "+search.nodeCount);
@@ -206,25 +215,25 @@ public class FlagFanEngine {
 		} catch (FENException e) {
 			e.printStackTrace();
 		}		
-		side = Piece.RED;
-		computer = Piece.EMPTY;
+		side = RED;
+		computer = EMPTY;
 		timeLeft = maxTime;
 		movesLeft = maxMoves;
 		gamePtr = 0;
 	}
 	
 	void force() {
-		computer = Piece.EMPTY;
+		computer = EMPTY;
 	}
 	
 	void white() {
-		side = Piece.RED;
-		computer = Piece.BLACK;
+		side = RED;
+		computer = BLACK;
 	}
 	
 	void black() {
-		side = Piece.BLACK;
-		computer = Piece.RED;		
+		side = BLACK;
+		computer = RED;		
 	}
 
 	void setTime(int time) {
@@ -274,12 +283,12 @@ public class FlagFanEngine {
 	
 	void go() {
 		computer = side;
-		movesLeft = -(gamePtr + (side==Piece.RED?1:0)>>1);
+		movesLeft = -(gamePtr + (side==RED?1:0)>>1);
 		while (maxMoves>0 && movesLeft<=0) movesLeft += maxMoves;
 	}
 	
 	void usermove(int move) {
-		side ^= Piece.RED ^ Piece.BLACK;
+		side ^= RED ^ BLACK;
 		p.makeMove(move);
 	}
 	
@@ -296,7 +305,7 @@ public class FlagFanEngine {
 	void makemove(int move) {
 		String ms = Misc.wbMove(move);
 		out.println("move "+ms);
-		side ^= Piece.RED ^ Piece.BLACK;
+		side ^= RED ^ BLACK;
 		p.makeMove(move);
 	}
 	

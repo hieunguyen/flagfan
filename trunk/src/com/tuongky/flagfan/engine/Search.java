@@ -1,26 +1,16 @@
 package com.tuongky.flagfan.engine;
 
-import static com.tuongky.flagfan.engine.TTEntry.*;
+import static com.tuongky.flagfan.engine.Constants.*;
 
+import com.tuongky.utils.Misc;
 import com.tuongky.utils.MyTimer;
 
 public class Search {
 
-	final static int oo 		= 1001001;
-	final static int WIN 		= 10000;
-	final static int DRAW 		= -3;
-	final static int MAX_DEPTH 	= 50;
-	final static int DEEPEST 	= 100;
-	final static int MAX_WIDTH 	= 100;
-	final static int TIME_LIMIT = 15*1000; // 5 mins
-	final static int TIME_UNLIMITED = 24*60*60*1000; // 1 day
-	final static boolean PV_NODE	= true;
-	final static boolean NON_PV		= false;
-	
 	Position p;
-	TTable tt;
 	MoveGenerator mg;
 	Evaluator evaluator;
+	TTable tt;
 	
 	long[][] historyTable;
 	int[][] moveLists;
@@ -78,6 +68,7 @@ public class Search {
 		for (int i=0; i<num; i++) {
 			int move = ms.nextMove();
 			if (p.makeMove(move)) {
+				
 				if (!foundPV) {
 					score = -quiesce(ply+1, -beta, -alpha);
 				} else {
@@ -105,8 +96,8 @@ public class Search {
 		
 		nodeCount++;
 		
-		if (alpha<-WIN+ply) {
-			alpha = -WIN+ply;
+		if (alpha<-WIN_VALUE+ply) {
+			alpha = -WIN_VALUE+ply;
 			if (alpha>=beta) return beta;
 		}
 		
@@ -132,12 +123,12 @@ public class Search {
 		int repValue = p.boardRepeated();
 		
 		if (repValue==1||repValue==7) {
-			if (DRAW<=alpha) return alpha;
-			if (beta<=DRAW) return beta;
-			return DRAW;
+			if (DRAW_VALUE<=alpha) return alpha;
+			if (beta<=DRAW_VALUE) return beta;
+			return DRAW_VALUE;
 		}
-		if (repValue==3) return Math.max(-WIN+ply, alpha);
-		if (repValue==5) return Math.min(WIN-ply, beta);
+		if (repValue==3) return Math.max(-WIN_VALUE+ply, alpha);
+		if (repValue==5) return Math.min(WIN_VALUE-ply, beta);
 		
 		if (depth<=0) {
 			MyTimer timer = new MyTimer();
@@ -226,16 +217,20 @@ public class Search {
 			for (int i=0; i<num; i++) {
 				int move = ms.nextMove();
 				if (move==ttMove||move==iidMove) continue;
+
+//				if (ply==0) Misc.printMoveForHuman(p, move);
+
 				if (p.makeMove(move)) {
+					
 					if (!foundPV) {
 						score = -PVS(ply+1, depth-1, -beta, -alpha, PV_NODE);
 					} else {
-						int rd = 2;
-//						if (depth<6) rd = 2;
-						score = -PVS(ply+1, depth-(i>=7?rd:1), -alpha-1, -alpha, NON_PV); // LMR
-//						score = -PVS(ply+1, depth-1, -alpha-1, -alpha, NON_PV);
-						if (alpha<score&&score<beta) { // re-search
-							score = -PVS(ply+1, depth-1, -beta, -alpha, PV_NODE);
+						if (i>=3 && !pvNode & depth>=2) { // ok to reduce
+							score = -PVS(ply+1, depth-2, -alpha-1, -alpha, NON_PV); // LMR
+						} else score = alpha+1;
+						if (alpha<score) { // re-search
+							score = -PVS(ply+1, depth-1, -alpha-1, -alpha, NON_PV);
+							if (alpha<score && score<beta) score = -PVS(ply+1, depth-1, -beta, -alpha, PV_NODE);
 						}
 					}				
 					p.undoMakeMove();
@@ -255,12 +250,15 @@ public class Search {
 		
 		if (ply==0&&bestLocalMove!=-1) bestMove = bestLocalMove;
 		
-		if (bestLocalMove!=-1) historyTable[bestLocalMove>>8&0xff][bestLocalMove&0xff] += 1L<<depth;
 		
 		byte flag = EXACT_SCORE;
 		if (alpha>=beta) flag = LOWER_BOUND; else
 			if (alpha<=a) flag = UPPER_BOUND;
 		tt.store(p.zobristLock, alpha, bestLocalMove, (byte) depth, flag);
+		
+		if (bestLocalMove!=-1) {
+			historyTable[bestLocalMove>>8&0xff][bestLocalMove&0xff] += 1L<<depth;
+		}
 		
 		return alpha;
 	}
@@ -298,7 +296,7 @@ public class Search {
 				bestScore = preBestScore;
 			}
 			long t = (long) (timer.elapsedTime()*0.1);
-			System.out.println(d+" "+bestScore+" "+t+" "+"0"+" "+p.moveForHuman(bestMove));
+			System.out.println(d+" "+bestScore+" "+t+" "+"0"+" "+Misc.moveForHuman(p, bestMove));
 
 //			for (int i=0; pv[0][i]>0; i++) {
 //				System.out.print(Misc.wbMove(pv[0][i])+" ");
@@ -312,7 +310,6 @@ public class Search {
 //			}
 //			for (int i=0; pv[0][i]>0; i++) p.undoMakeMove();
 //			System.out.println("\n");
-			
 			if (timer.expired(timeLimit)) break;			
 		}
 		System.out.println("QTime = "+qTime*0.001+" s");

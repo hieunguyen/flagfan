@@ -1,6 +1,12 @@
 package com.tuongky.utils;
 
+import static com.tuongky.flagfan.engine.Constants.PIECE_LETTERS;
+import static com.tuongky.flagfan.engine.Constants.PIECE_TYPES;
+import static com.tuongky.flagfan.engine.Constants.RED;
+
 import java.util.Arrays;
+
+import com.tuongky.flagfan.engine.Position;
 
 public class Misc {
 
@@ -45,4 +51,47 @@ public class Misc {
 		return (src<<8)+dst;		
 	}
 	
+	public static String moveForHuman(Position p, int move, int side) {
+		int[] board = p.getBoard();
+		if (move <= 0)
+			return "No moves found!";
+		int src, dst, r1, f1, r2, f2;
+		String moveStr, dir;
+		src = (move >> 8) & 0xff;
+		dst = move & 0xff;
+		char pc = PIECE_LETTERS.charAt(PIECE_TYPES[board[src]]);
+		r1 = (src >> 4) - 2;
+		f1 = (src & 0xf) - 2;
+		r2 = (dst >> 4) - 2;
+		f2 = (dst & 0xf) - 2;
+		if (side == RED) {
+			f1 = 10 - f1;
+			f2 = 10 - f2;
+		}
+		if (r1 != r2) {
+			if (side == RED ^ r2 < r1)
+				dir = "-";
+			else
+				dir = "+";
+			if (f1 == f2) {
+				moveStr = "" + pc + f1 + dir + Math.abs(r1 - r2);
+			} else {
+				moveStr = "" + pc + f1 + dir + f2;
+			}
+		} else {
+			dir = ".";
+			moveStr = "" + pc + f1 + dir + f2;
+		}
+		return moveStr;
+	}
+
+	public static String moveForHuman(Position p, int move) {
+		return moveForHuman(p, move, p.getTurn());
+	}
+	
+	public static void printMoveForHuman(Position p, int move) {
+		String moveStr = moveForHuman(p, move);
+		System.out.println(moveStr);
+	}
+
 }
