@@ -9,6 +9,7 @@ import java.util.Arrays;
 
 import com.tuongky.utils.FEN;
 import com.tuongky.utils.FENException;
+import com.tuongky.utils.Misc;
 
 public class Position {
 
@@ -31,6 +32,9 @@ public class Position {
 		bitFiles = new int[16];
 		material = 0;
 		zobristLock = 0;
+		MoveGenerator.getInstance();
+		Evaluator.getInstance();
+		Zobrist.getInstance();
 	}
 
 	private void init(int[] board90, int turn) {
@@ -313,7 +317,7 @@ public class Position {
 	}
 
 	public int attackers(int square, int[] ps) {
-		int p, rank, file, i, e;
+		int p, src, rank, file, x, y, i, e;
 		
 		rank = square >> 4;
 		file = square & 0xf;
@@ -333,39 +337,77 @@ public class Position {
 		// ADVISOR attack
 		if (ADVISOR_REACHABLE[square]) {
 			i = 0;
-			p = ADVISOR_MOVES[square][0];
-			while (p!=0) {
-				ps[num++] = p;
+			src = ADVISOR_MOVES[square][0];
+			while (src!=0) {
+				p = board[src];
+				if (PIECE_TYPES[p]==ADVISOR) ps[num++] = p;
 				i++;
-				p = ADVISOR_MOVES[square][i];
+				src = ADVISOR_MOVES[square][i];
 			}
 		}
 		
 		// ELEPHANT attack
 		if (ELEPHANT_REACHABLE[square]) {
 			i = 0;
-			p = ELEPHANT_MOVES[square][0];
-			while (p!=0) {
+			src = ELEPHANT_MOVES[square][0];
+			while (src!=0) {
 				e = ELEPHANT_EYES[square][i];
-				if (board[e]==0) ps[num++] = p;
+				p = board[src];
+				if (board[e]==0 && PIECE_TYPES[p]==ELEPHANT) ps[num++] = p;
 				i++;
-				p = ELEPHANT_MOVES[square][i];
+				src = ELEPHANT_MOVES[square][i];
 			}
 		}
 		
 		// HORSE attack
 		i = 0;
-		p = HORSE_MOVES[square][i];
-		while (p!=0) {
-			e = square + REVERSE_HORSE_LEG_TAB[p-square+BOARD_SIZE];
-			if (board[e]==0) ps[num++] = p;
+		src = HORSE_MOVES[square][i];
+		while (src!=0) {
+			e = square + REVERSE_HORSE_LEG_TAB[src-square+BOARD_SIZE];
+			p = board[src];
+			if (board[e]==0 && PIECE_TYPES[p]==HORSE) ps[num++] = p;
 			i++;
-			p = HORSE_MOVES[square][i];
+			src = HORSE_MOVES[square][i];
 		}
 
 		// CANNON attack
+		for (int dir=0; dir<2; dir++) {
+			y = CANNON_RANK_CAP_TAB[file-3][bitRanks[rank]>>3][dir];
+			if (y!=file) {
+				src = rank<<4|y;
+				p = board[src];
+				if (PIECE_TYPES[p]==CANNON) ps[num++] = p;
+			}
+		}
+	
+		for (int dir=0; dir<2; dir++) {
+			x = CANNON_FILE_CAP_TAB[rank-3][bitFiles[file]>>3][dir];
+			if (x!=rank) {
+				src = x<<4|file;
+				p = board[src];
+				if (PIECE_TYPES[p]==CANNON) ps[num++] = p;
+			}
+		}
 	
 		// ROOK attack
+		for (int dir=0; dir<2; dir++) {
+			y = ROOK_RANK_CAP_TAB[file-3][bitRanks[rank]>>3][dir];
+			if (y!=file) {
+				src = rank<<4|y;
+				p = board[src];
+				if (PIECE_TYPES[p]==ROOK) ps[num++] = p;
+			}
+		}
+	
+		for (int dir=0; dir<2; dir++) {
+			x = ROOK_FILE_CAP_TAB[rank-3][bitFiles[file]>>3][dir];
+			if (x!=rank) {
+				src = x<<4|file;
+				p = board[src];
+				if (PIECE_TYPES[p]==ROOK) ps[num++] = p;
+			}
+		}
+	
 		
 		// KING attack
 		
@@ -375,7 +417,47 @@ public class Position {
 	public int see(int src, int dst) {
 		int[] ps = new int[32];
 		int num = attackers(dst, ps);
-		return 0;
+		int next = -1;
+		for (int i=0; i<num; i++)
+			if (board[src]==ps[i]) { next = i; break; }
+		int[] values = new int[32];
+		int cp = 0;
+		int pieceTag = 16 + (turn<<4);
+		values[cp++] = PIECE_VALUES[PIECE_TYPES[board[dst]]];
+		while (next!=-1) {
+			int p = ps[next];
+			values[cp++] = PIECE_VALUES[PIECE_TYPES[p]];
+			int r, f;
+			r = pieces[p] >> 4;
+			f = pieces[p] & 0xf;
+			bitRanks[r] ^= 1<<f;
+			bitFiles[f] ^= 1<<r;
+			ps[next] = -p;
+
+			pieceTag = 48 - pieceTag;
+			next = -1;
+			for (int i=0; i<num; i++)
+				if (ps[i]>0 && (pieceTag&ps[i])!=0) {
+					next = i;
+					break;
+				}
+		}
+		for (int i=0; i<num; i++)
+			if (ps[i]<0) {
+				int p = -ps[i];
+				int r, f;
+				r = pieces[p] >> 4;
+				f = pieces[p] & 0xf;
+				bitRanks[r] ^= 1<<f;
+				bitFiles[f] ^= 1<<r;
+			}
+		Misc.debug(ps);
+		Misc.debug(values);
+		values[cp-1] = 0;
+		for (int i=cp-2; i>0; i--) {
+			values[i] = Math.max(0, values[i]-values[i+1]);
+		}
+		return values[0]-values[1];
 	}
 
 	public int see(int move) {
@@ -384,6 +466,10 @@ public class Position {
 	
 	public int[] getBoard() {
 		return board;
+	}
+
+	public int[] getPieces() {
+		return pieces;
 	}
 
 	public int getTurn() {
