@@ -39,15 +39,9 @@ public class Misc {
 	}
 	
 	public static int ffMove(String wbm) {
-		int r1, f1, r2, f2;
-		r1 = (wbm.charAt(1)-'0');
-		f1 = (wbm.charAt(0)-'a')+3;
-		r2 = (wbm.charAt(3)-'0');
-		f2 = (wbm.charAt(2)-'a')+3;
-		r1 = 9-r1+3; r2 = 9-r2+3;
 		int src, dst;
-		src = (r1<<4)+f1;
-		dst = (r2<<4)+f2;
+		src = ff2sqr(wbm.substring(0, 2));
+		dst = ff2sqr(wbm.substring(2, 4));
 		return (src<<8)+dst;		
 	}
 	
@@ -94,4 +88,22 @@ public class Misc {
 		System.out.println(moveStr);
 	}
 
+	public static int ff2sqr(String pos) {
+		int r, f;
+		r = (pos.charAt(1)-'0');
+		f = (pos.charAt(0)-'a')+3;
+		r = 9-r+3;
+		return r<<4|f;
+	}
+	
+	public static String sqr2ff(int square) {
+		int r, f;
+		r = square>>4;
+		f = square & 0xf;
+		r = 12-r;
+		f -= 3;
+		return (char)(f+'a')+""+(char)(r+'0');
+	}
+	
+	
 }

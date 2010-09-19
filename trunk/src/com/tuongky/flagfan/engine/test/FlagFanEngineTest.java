@@ -21,7 +21,8 @@ public class FlagFanEngineTest {
 //	public static String fen = "4kae2/4a4/h1H1e4/4p3p/3R5/p5P2/4P4/4E2r1/4A1C2/4KAE1c w"; // X6.9
 //	public static String fen = "2cak4/4aP3/4c4/9/9/9/9/4C4/4Ap3/2CAK4 w"; // P7+4
 //	public static String fen = "2e2ae2/3R5/4k3h/C8/6p1P/P1P1P4/6P2/4E4/4rr3/3K1AEcR w 7 2";
-	public static String fen = "4ka3/3Pa4/4e4/2h5p/2p6/6E1P/9/2pAE4/4A4/3CK4 w 0 55";
+//	public static String fen = "4ka3/3Pa4/4e4/2h5p/2p6/6E1P/9/2pAE4/4A4/3CK4 w 0 55";
+	public static String fen = "2eak4/4a4/c1r1er3/3P1H3/5R3/R8/6p2/4E4/4A4/3AK1E2 w 0 43";
 	
 	Search search;
 	Position p;

@@ -24,7 +24,7 @@ public class Search {
 	
 	long qTime, gmTime;
 	
-	public long nodeCount;
+	public long nodeCount, qNode;
 	
 	public Search(Position p) {
 		this.p = p;
@@ -45,6 +45,8 @@ public class Search {
 	}
 	
 	int quiesce(int ply, int alpha, int beta) {
+		
+		qNode++;
 		
 		if (timer.expired(timeLimit)) return alpha; // fail low if pass time limit
 		
@@ -67,6 +69,7 @@ public class Search {
 		
 		for (int i=0; i<num; i++) {
 			int move = ms.nextMove();
+			if (p.see(move)<0) continue;
 			if (p.makeMove(move)) {
 				
 				if (!foundPV) {
@@ -280,6 +283,7 @@ public class Search {
 		qTime = 0;
 		gmTime = 0;
 		nodeCount = 0;
+		qNode = 0;
 	}
 	
 	void iterativeDeepning() {
@@ -312,6 +316,7 @@ public class Search {
 //			System.out.println("\n");
 			if (timer.expired(timeLimit)) break;			
 		}
+		System.out.println("qNode = "+qNode);
 		System.out.println("QTime = "+qTime*0.001+" s");
 		System.out.println("GenMoveTime = "+gmTime*0.001+" s");
 	}

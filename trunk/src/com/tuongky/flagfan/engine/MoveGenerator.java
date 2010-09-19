@@ -175,7 +175,7 @@ public class MoveGenerator {
 			}
 		}
 		Arrays.fill(ELEPHANT_REACHABLE, false);
-		for (int j=3; j<=7; j+=2) {
+		for (int j=3; j<=11; j+=2) {
 			for (int i=3; i<=7; i+=2) {
 				int u, v;
 				u = (i-3)/2;
