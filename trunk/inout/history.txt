@@ -1,0 +1,18 @@
+"rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RHEAKAEHR w - - - 1"; // INITIAL
+Start
+1 9 0 0 H8+7
+2 0 3 0 H8+7
+3 9 6 0 H8+7
+4 0 34 0 H8+7
+5 7 55 0 H2+3
+6 1 111 0 H2+3
+7 6 143 0 H8+7
+8 2 408 0 H8+7
+9 6 678 0 H2+3
+10 1 8330 0 H2+3
+QTime = 46.333 s
+GenMoveTime = 9.115 s
+H2+3
+Time: 83.302s
+Node Count = 74149382
+Node Per Second = 0.890 millions
