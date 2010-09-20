@@ -12,7 +12,7 @@ import com.tuongky.utils.MyTimer;
 
 public class FlagFanEngineTest {
 
-//	public static String fen = "rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RHEAKAEHR w - - - 1";
+	public static String fen = "rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RHEAKAEHR w - - - 1";
 //	public static String fen = "3akaer1/3h5/4e1h2/pH5Cp/4P4/2p3c2/P8/2C6/4A4/4KA1R1 w 2 22";
 //	public static String fen = "2eak3C/4a4/4e2R1/P3r3p/9/1rP3P2/1c6P/4E4/4H4/2EAKA3 b 0 26";
 //	public static String fen = "r1eakae2/5r3/h3c1hc1/p1C1p3C/6p2/9/P1P1P1P1P/4E4/R4H3/1HEAKA2R b 0 7";
@@ -22,7 +22,7 @@ public class FlagFanEngineTest {
 //	public static String fen = "2cak4/4aP3/4c4/9/9/9/9/4C4/4Ap3/2CAK4 w"; // P7+4
 //	public static String fen = "2e2ae2/3R5/4k3h/C8/6p1P/P1P1P4/6P2/4E4/4rr3/3K1AEcR w 7 2";
 //	public static String fen = "4ka3/3Pa4/4e4/2h5p/2p6/6E1P/9/2pAE4/4A4/3CK4 w 0 55";
-	public static String fen = "2eak4/4a4/c1r1er3/3P1H3/5R3/R8/6p2/4E4/4A4/3AK1E2 w 0 43";
+//	public static String fen = "2eak4/4a4/c1r1er3/3P1H3/5R3/R8/6p2/4E4/4A4/3AK1E2 w 0 43";
 	
 	Search search;
 	Position p;
@@ -34,7 +34,7 @@ public class FlagFanEngineTest {
 //		for (String wbm: moves) makeMove(wbm);
 		MyTimer timer = new MyTimer();
 		search.setTimeLimit(-1);
-		search.setMaxDepth(12);
+		search.setMaxDepth(10);
 		int bestMove = search.findBestMove();
 		Misc.printMoveForHuman(p, bestMove);
 		timer.printElapsedTime();
