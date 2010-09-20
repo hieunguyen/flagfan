@@ -1,7 +1,6 @@
 package com.tuongky.flagfan.engine;
 
 import static com.tuongky.flagfan.engine.Evaluator.*;
-import static com.tuongky.flagfan.engine.Constants.*;
 
 public class MoveSorter {
 
@@ -42,7 +41,7 @@ public class MoveSorter {
 			long value = historyTable[src][dst];
 			if (captured!=0) {
 				int attacker = p.board[src];
-				value += (PIECE_VALUES[PIECE_TYPES[captured]]<<50)+(PIECE_VALUES[PIECE_TYPES[attacker]]<<40); // MVV-LVA
+				value += (PIECE_VALUES[captured]<<50)+(PIECE_VALUES[attacker]<<40); // MVV-LVA
 			}
 			if (value>max) {
 				max = value;

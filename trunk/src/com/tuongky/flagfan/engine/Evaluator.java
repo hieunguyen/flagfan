@@ -6,7 +6,8 @@ import com.tuongky.utils.FENException;
 
 public class Evaluator {
 
-	public final static int[] PIECE_VALUES = {10000, 200, 250, 1000, 500, 450, 100};
+	public final static int[] P_VALUES = {10000, 200, 250, 1000, 500, 450, 100};
+	public final static int[] PIECE_VALUES = new int[48];
 	
 	public final static int[][] PIECE_POS_VALUES = new int[48][BOARD_SIZE];
 	
@@ -141,6 +142,10 @@ public class Evaluator {
 	
 	private static Evaluator instance = null;
 	
+	void initPieceValues() {
+		for (int i=16; i<48; i++) PIECE_VALUES[i] = P_VALUES[PIECE_TYPES[i]];
+	}
+	
 	void initPiecePosValues() {
 		for (int piece=16; piece<48; piece++) 
 			for (int square=16; square<BOARD_SIZE-16; square++) {
@@ -150,6 +155,7 @@ public class Evaluator {
 	}
 	
 	void initAll() {
+		initPieceValues();
 		initPiecePosValues();
 	}
 	

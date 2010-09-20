@@ -69,9 +69,8 @@ public class Search {
 		
 		for (int i=0; i<num; i++) {
 			int move = ms.nextMove();
-			if (p.see(move)<0) continue;
+			if (!p.goodCapture(move)) continue;
 			if (p.makeMove(move)) {
-				
 				if (!foundPV) {
 					score = -quiesce(ply+1, -beta, -alpha);
 				} else {
@@ -161,6 +160,10 @@ public class Search {
 		// Transposition Table Move
 		if (ttEntry!=null&&p.legalMove(ttEntry.move)) {
 			ttMove = ttEntry.move;
+//			if (ply==0) {
+//				System.out.println("Hash Move:");
+//				Misc.printMoveForHuman(p, ttMove);
+//			}
 			if (p.makeMove(ttMove)) {
 				if (!foundPV) {
 					score = -PVS(ply+1, depth-1, -beta, -alpha, PV_NODE);

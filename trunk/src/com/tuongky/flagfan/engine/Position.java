@@ -9,7 +9,6 @@ import java.util.Arrays;
 
 import com.tuongky.utils.FEN;
 import com.tuongky.utils.FENException;
-import com.tuongky.utils.Misc;
 
 public class Position {
 
@@ -326,9 +325,9 @@ public class Position {
 
 		// PAWN attack
 		p = board[square - 1];
-		if (PIECE_TYPES[p]==PAWN) ps[num++] = p;
+		if ( PIECE_TYPES[p]==PAWN && ((p>>5==RED)^((square&0x80)!=0)) ) ps[num++] = p;
 		p = board[square + 1];
-		if (PIECE_TYPES[p]==PAWN) ps[num++] = p;
+		if ( PIECE_TYPES[p]==PAWN && ((p>>5==RED)^((square&0x80)!=0)) ) ps[num++] = p;
 		p = board[square + 16];
 		if (PIECE_TYPES[p]==PAWN && p>>5==RED) ps[num++] = p;
 		p = board[square - 16];
@@ -414,19 +413,28 @@ public class Position {
 		return num;
 	}
 	
+	public boolean goodCapture(int move) {
+		int src = move >> 8 & 0xff;
+		int dst = move & 0xff;
+		if (PIECE_VALUES[board[src]]<=PIECE_VALUES[board[dst]]) return true;
+		return see(src, dst)>=0;
+	}
+	
 	public int see(int src, int dst) {
 		int[] ps = new int[32];
 		int num = attackers(dst, ps);
+//		System.out.println("attackers = "+num);
 		int next = -1;
 		for (int i=0; i<num; i++)
 			if (board[src]==ps[i]) { next = i; break; }
 		int[] values = new int[32];
 		int cp = 0;
 		int pieceTag = 16 + (turn<<4);
-		values[cp++] = PIECE_VALUES[PIECE_TYPES[board[dst]]];
+		values[cp++] = PIECE_VALUES[board[dst]];
 		while (next!=-1) {
 			int p = ps[next];
-			values[cp++] = PIECE_VALUES[PIECE_TYPES[p]];
+			values[cp++] = PIECE_VALUES[p];
+//			System.out.println(PIECE_LETTERS.charAt(PIECE_TYPES[p]));
 			int r, f;
 			r = pieces[p] >> 4;
 			f = pieces[p] & 0xf;
@@ -451,8 +459,8 @@ public class Position {
 				bitRanks[r] ^= 1<<f;
 				bitFiles[f] ^= 1<<r;
 			}
-		Misc.debug(ps);
-		Misc.debug(values);
+//		Misc.debug(ps);
+//		Misc.debug(values);
 		values[cp-1] = 0;
 		for (int i=cp-2; i>0; i--) {
 			values[i] = Math.max(0, values[i]-values[i+1]);
