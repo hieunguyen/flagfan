@@ -16,11 +16,6 @@ import static com.tuongky.flagfan.engine.Constants.*;
 
 public class FlagFanEngine {
 
-	final static String MY_NAME 	= "FlagFan 1.0";
-	final static String AUTHOR 		= "Hieu Nguyen";
-	final static String XBOARD 		= "xboard";
-	final static String UCI 		= "uci";
-	
     BufferedReader br;	
 	PrintStream out;
 	
@@ -53,7 +48,7 @@ public class FlagFanEngine {
 		out = new PrintStream(System.out, true);
 		side = RED;
 		computer = EMPTY;
-		out.println("tellics say 	"+MY_NAME);
+		out.println("tellics say 	"+ENGINE_NAME);
 		out.println("tellics say 	by "+AUTHOR);
 		initSingletons();
 	}
@@ -190,10 +185,10 @@ public class FlagFanEngine {
 		System.out.println("Thinking...");
 		int move = search.findBestMove();
 		Misc.printMoveForHuman(p, move);
-		double nps = search.nodeCount/(timer.elapsedTime()*0.001)*1e-6;
+//		double nps = search.nodeCount/(timer.elapsedTime()*0.001)*1e-6;
 		timer.printElapsedTime();
-		System.out.println("Node Count = "+search.nodeCount);
-		System.out.println("Node Per Second = "+String.valueOf(nps).substring(0, 5)+" millions");
+//		System.out.println("Node Count = "+search.nodeCount);
+//		System.out.println("Node Per Second = "+String.valueOf(nps).substring(0, 5)+" millions");
 	}
 	
 	public static void main(String[] args) throws IOException {
@@ -262,7 +257,7 @@ public class FlagFanEngine {
 	}
 
 	void protover() {
-		feature("myname", "\""+MY_NAME+"\"");
+		feature("myname", "\""+ENGINE_NAME+"\"");
 		feature("usermove", "1");
 		feature("memory", "0");
 		feature("smp", "1");

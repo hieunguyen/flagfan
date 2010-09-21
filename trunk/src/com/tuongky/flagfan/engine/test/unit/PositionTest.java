@@ -1,4 +1,4 @@
-package com.tuongky.flagfan.engine.test;
+package com.tuongky.flagfan.engine.test.unit;
 
 import junit.framework.Assert;
 
