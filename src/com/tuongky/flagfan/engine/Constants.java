@@ -3,7 +3,7 @@ package com.tuongky.flagfan.engine;
 public class Constants {
 
 	// Info
-	final static String ENGINE_NAME 				= "FlagFan 1.0";
+	final static String ENGINE_NAME 				= "FlagFan 1.1";
 	final static String AUTHOR 						= "Hieu Nguyen";
 	
 	// Protocol
@@ -59,9 +59,9 @@ public class Constants {
 	
 	// Transposition Table
 	public static final int TSIZE 					= 1<<20;
-	public static final int LOWER_BOUND 			= 0;
-	public static final int EXACT_SCORE 			= 1;
-	public static final int UPPER_BOUND 			= 2;
+	public static final byte LOWER_BOUND 			= 0;
+	public static final byte EXACT_SCORE 			= 1;
+	public static final byte UPPER_BOUND 			= 2;
 
 	private Constants() {}
 	

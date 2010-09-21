@@ -2,6 +2,8 @@ package com.tuongky.flagfan.engine;
 
 import static com.tuongky.flagfan.engine.Constants.*;
 
+import java.util.Arrays;
+
 import com.tuongky.utils.Misc;
 import com.tuongky.utils.MyTimer;
 
@@ -12,19 +14,21 @@ public class Search {
 	Evaluator evaluator;
 	TTable tt;
 	
-	long[][] historyTable;
-	int[][] moveLists;
-	int bestMove;
-	
-	int[][] pv;
-	
 	MyTimer timer;
 	int maxDepth;
 	long timeLimit;
 	
-	long qTime, gmTime;
+	long[][] historyTable;
+	int[][] moveLists;
+	int bestMove;
 	
-	public long nodeCount, qNode;
+	int[] rootMoves;
+	int[] rootMoveScores;
+	int rootNum, rootMoveIndex;
+	
+	long nonPV, pv, pvsNode, qNode;
+	
+	long lmrFail, lmr;
 	
 	public Search(Position p) {
 		this.p = p;
@@ -46,22 +50,40 @@ public class Search {
 	
 	int quiesce(int ply, int alpha, int beta) {
 		
-		qNode++;
-		
 		if (timer.expired(timeLimit)) return alpha; // fail low if pass time limit
 		
-		if (p.isChecked()) return PVS(ply+1, 1, alpha, beta, PV_NODE);
+		qNode++;
+		
+		TTEntry ttEntry = tt.retrieve(p.zobristLock);
+		
+		if (ttEntry!=null) {
+			switch (ttEntry.flag) {
+				case LOWER_BOUND:
+					if (ttEntry.score>alpha) alpha = ttEntry.score;
+					break;
+				case UPPER_BOUND:
+					if (ttEntry.score<beta) beta = ttEntry.score;
+					break;
+				case EXACT_SCORE:
+					if (ttEntry.score<alpha) return alpha;
+					if (ttEntry.score>beta) return beta;
+					return ttEntry.score;
+			}
+			if (alpha>=beta) return beta;
+		}
 		
 		int score = evaluator.eval(p);
 		if (score>=beta) return score;
+		
 		if (score>alpha) alpha = score;
+		
+		int a = alpha;
+		int bestLocalMove = -1;
 		
 		boolean foundPV = false;
 		
 		int[] moveList = moveLists[ply];
-		MyTimer gmTimer = new MyTimer();
 		int num = mg.genCaptureMoves(p, moveList);
-		gmTime += gmTimer.elapsedTime();
 		
 		if (num==0) return alpha;
 		
@@ -81,22 +103,31 @@ public class Search {
 				}				
 				p.undoMakeMove();
 				if (score>alpha) {
-//					updatePV(ply, move);					
 					foundPV = true;
 					alpha = score;
-					if (alpha>=beta) return beta;
+					bestLocalMove = move;
+					if (alpha>=beta) { alpha = beta; break; }
 				}
 			}
 		}
 		
+		byte flag = EXACT_SCORE;
+		if (alpha>=beta) flag = LOWER_BOUND; else
+			if (alpha<=a) flag = UPPER_BOUND;
+		tt.store(p.zobristLock, alpha, bestLocalMove, (byte) 0, flag);
+		
 		return alpha;
 	}
 	
-	int PVS(int ply, int depth, int alpha, int beta, boolean pvNode) {
+	int PVS(int ply, int depth, int alpha, int beta) {
 		
 		if (timer.expired(timeLimit)) return alpha; // fail low if pass time limit
+
+		pvsNode++;
 		
-		nodeCount++;
+		boolean pvNode = alpha+1<beta;
+		
+		if (pvNode) pv++; else nonPV++;
 		
 		if (alpha<-WIN_VALUE+ply) {
 			alpha = -WIN_VALUE+ply;
@@ -132,21 +163,15 @@ public class Search {
 		if (repValue==3) return Math.max(-WIN_VALUE+ply, alpha);
 		if (repValue==5) return Math.min(WIN_VALUE-ply, beta);
 		
-		if (depth<=0) {
-			MyTimer timer = new MyTimer();
-			int tmp = quiesce(ply, alpha, beta);
-			qTime += timer.elapsedTime();
-			return tmp;
-		}
+		if (depth<=0) return quiesce(ply, alpha, beta);
 		
 		int score, bestLocalMove = -1;
 
 		// Null Move
-		if ((ttEntry==null||ttEntry.flag!=EXACT_SCORE) && 
-				p.isNullMoveOK() && depth>2 && !p.isChecked()) {
+		if (depth>2 && p.isNullMoveOK() && !p.isChecked()) {
 			p.makeNullMove();
 			int nmr = (depth>6) ? 3 : 2;
-			score = -PVS(ply+1, depth-1-nmr, -beta, -alpha, PV_NODE);
+			score = -PVS(ply+1, depth-1-nmr, -beta, -alpha);
 			p.undoMakeNullMove();
 			if (score>=beta) return beta;	
 			if (score>alpha) { alpha = score; }
@@ -154,23 +179,19 @@ public class Search {
 		
 		int a = alpha;		
 		boolean foundPV = false;
-		
+
 		int ttMove = -1, iidMove = -1;
 		
 		// Transposition Table Move
-		if (ttEntry!=null&&p.legalMove(ttEntry.move)) {
+		if (ttEntry!=null && p.legalMove(ttEntry.move)) {
 			ttMove = ttEntry.move;
-//			if (ply==0) {
-//				System.out.println("Hash Move:");
-//				Misc.printMoveForHuman(p, ttMove);
-//			}
 			if (p.makeMove(ttMove)) {
 				if (!foundPV) {
-					score = -PVS(ply+1, depth-1, -beta, -alpha, PV_NODE);
+					score = -PVS(ply+1, depth-1, -beta, -alpha);
 				} else {
-					score = -PVS(ply+1, depth-1, -alpha-1, -alpha, NON_PV);
+					score = -PVS(ply+1, depth-1, -alpha-1, -alpha);
 					if (alpha<score&&score<beta) { // re-search
-						score = -PVS(ply+1, depth-1, -beta, -alpha, PV_NODE);
+						score = -PVS(ply+1, depth-1, -beta, -alpha);
 					}
 				}				
 				p.undoMakeMove();
@@ -179,24 +200,23 @@ public class Search {
 					alpha = score;
 					bestLocalMove = ttMove;
 					if (alpha>=beta) alpha = beta; 
-					else updatePV(ply, ttMove);
 				}
 			}			
 		}
 		
 		// IID - Internal Iterative Deepening
-		if (alpha<beta && depth>=3 && ttMove==-1) {
-			score = PVS(ply, depth-2, alpha, beta, PV_NODE);
+		if (alpha<beta && depth>=3) {
+			score = PVS(ply, depth-3, alpha, beta);
 			TTEntry entry = tt.retrieve(p.zobristLock);			
 			if (entry!=null && p.legalMove(entry.move)) {
 				iidMove = entry.move;
 				if (p.makeMove(iidMove)) {
 					if (!foundPV) {
-						score = -PVS(ply+1, depth-1, -beta, -alpha, PV_NODE);
+						score = -PVS(ply+1, depth-1, -beta, -alpha);
 					} else {
-						score = -PVS(ply+1, depth-1, -alpha-1, -alpha, NON_PV);
+						score = -PVS(ply+1, depth-1, -alpha-1, -alpha);
 						if (alpha<score&&score<beta) { // re-search
-							score = -PVS(ply+1, depth-1, -beta, -alpha, PV_NODE);
+							score = -PVS(ply+1, depth-1, -beta, -alpha);
 						}
 					}				
 					p.undoMakeMove();
@@ -205,7 +225,6 @@ public class Search {
 						alpha = score;
 						bestLocalMove = iidMove;
 						if (alpha>=beta) alpha = beta; 
-						else updatePV(ply, iidMove);
 					}
 				}				
 			}
@@ -213,30 +232,25 @@ public class Search {
 		
 		if (alpha<beta) {
 			int[] moveList = moveLists[ply];
-			
-			MyTimer gmTimer = new MyTimer();
 			int num = mg.genAllMoves(p, moveList);
-			gmTime += gmTimer.elapsedTime();
-			
-			MoveSorter ms = new MoveSorter(p, moveList, num, historyTable);
-			
+			MoveSorter ms = new MoveSorter(p, moveList, num, historyTable);		
 			for (int i=0; i<num; i++) {
 				int move = ms.nextMove();
 				if (move==ttMove||move==iidMove) continue;
-
-//				if (ply==0) Misc.printMoveForHuman(p, move);
-
+				boolean isCaptured = p.isCaptureMove(move);
 				if (p.makeMove(move)) {
-					
-					if (!foundPV) {
-						score = -PVS(ply+1, depth-1, -beta, -alpha, PV_NODE);
+					if (pvNode && !foundPV) {
+						score = -PVS(ply+1, depth-1, -beta, -alpha);
 					} else {
-						if (i>=3 && !pvNode & depth>=2) { // ok to reduce
-							score = -PVS(ply+1, depth-2, -alpha-1, -alpha, NON_PV); // LMR
+						if (!pvNode && i>3 && depth>=2 && !isCaptured) {
+							score = -PVS(ply+1, depth-2, -alpha-1, -alpha);
+							lmr++;
+							if (score>alpha) lmrFail++;
 						} else score = alpha+1;
-						if (alpha<score) { // re-search
-							score = -PVS(ply+1, depth-1, -alpha-1, -alpha, NON_PV);
-							if (alpha<score && score<beta) score = -PVS(ply+1, depth-1, -beta, -alpha, PV_NODE);
+						if (score>alpha) {
+//							System.out.println("LMR fail");
+							score = -PVS(ply+1, depth-1, -alpha-1, -alpha);
+							if (alpha<score && score<beta) score = -PVS(ply+1, depth-1, -beta, -alpha);
 						}
 					}				
 					p.undoMakeMove();
@@ -248,19 +262,17 @@ public class Search {
 							alpha = beta;
 							break;
 						}
-						updatePV(ply, move);
 					}
 				}
 			}
 		}
 		
-		if (ply==0&&bestLocalMove!=-1) bestMove = bestLocalMove;
-		
-		
 		byte flag = EXACT_SCORE;
 		if (alpha>=beta) flag = LOWER_BOUND; else
 			if (alpha<=a) flag = UPPER_BOUND;
 		tt.store(p.zobristLock, alpha, bestLocalMove, (byte) depth, flag);
+		
+		if (flag==UPPER_BOUND && (ply&1)==1) rootMoveScores[rootMoveIndex]++;
 		
 		if (bestLocalMove!=-1) {
 			historyTable[bestLocalMove>>8&0xff][bestLocalMove&0xff] += 1L<<depth;
@@ -269,59 +281,107 @@ public class Search {
 		return alpha;
 	}
 	
-	void updatePV(int ply, int move) {
-		pv[ply][ply] = move;
-		int i;
-		for (i=ply+1; pv[ply+1][i]>0; i++) {
-			pv[ply][i] = pv[ply+1][i];
-		}
-		pv[ply][i] = 0;
-	}
-	
 	void beforeSearch() {
 		timer = new MyTimer();
 		tt = new TTable();
-		historyTable = new long[256][256];
-		pv = new int[DEEPEST+1][DEEPEST+1];
-		qTime = 0;
-		gmTime = 0;
-		nodeCount = 0;
+		historyTable = new long[256][256];		
+		bestMove = -1;
+		initRootMoves();
+		
+		// stats
+		nonPV = 0;
+		pv = 0;
+		pvsNode = 0;
 		qNode = 0;
+		lmr = lmrFail = 0;
+	}
+	
+	void initRootMoves() {
+		rootMoves = new int[MAX_WIDTH];
+		rootMoveScores = new int[MAX_WIDTH];
+		rootNum = mg.genAllMoves(p, rootMoves);
+		for (int i=0; i<rootNum; i++) {
+			int move = rootMoves[i];
+			if (p.makeMove(move)) {
+				rootMoveScores[i] = quiesce(0, -oo, +oo);
+				p.undoMakeMove();
+			}
+		}
+	}
+	
+	void sortRootMoves() {
+		for (int i=0; i<rootNum; i++)
+			if (rootMoves[i]==bestMove) {
+				rootMoveScores[i] += 1<<30;
+				break;
+			}
+		
+		for (int i=0; i<rootNum; i++)
+			for (int j=i+1; j<rootNum; j++) 
+			if (rootMoveScores[i]<rootMoveScores[j]) {
+				int tmp;
+				tmp = rootMoveScores[i];
+				rootMoveScores[i] = rootMoveScores[j];
+				rootMoveScores[j] = tmp;
+				tmp = rootMoves[i];
+				rootMoves[i] = rootMoves[j];
+				rootMoves[j] = tmp;
+			}
+		
+		rootMoveScores[0] -= 1<<30;
+	}
+	
+	int searchRoot(int depth, int alpha, int beta) {
+		int score;
+		boolean foundPV = false;
+		for (int i=0; i<rootNum; i++) {
+			rootMoveIndex = i;
+			int move = rootMoves[i];
+			if (p.makeMove(move)) {
+				if (!foundPV) {
+					score = -PVS(1, depth-1, -beta, -alpha);
+				} else {
+					score = -PVS(1, depth-1, -alpha-1, -alpha);
+					if (alpha<score && score<beta) score = -PVS(1, depth-1, -beta, -alpha);
+				}
+				if (score>alpha && !timer.expired(timeLimit)) {
+					alpha = score;
+					bestMove = move;
+					foundPV = true;
+				}
+				p.undoMakeMove();
+			}
+		}
+		tt.store(p.zobristLock, alpha, bestMove, (byte) depth, EXACT_SCORE);
+		return alpha;
 	}
 	
 	void iterativeDeepning() {
-		bestMove = -1;
-		int bestScore = -1;
-		int preBestMove, preBestScore;
 		for (int d=1; d<=maxDepth; d++) {
-			preBestMove = bestMove;
-			preBestScore = bestScore;
-			bestScore = PVS(0, d, -oo, +oo, PV_NODE);
-			if (timer.expired(timeLimit)) {
-				System.out.println("Expired, use the best move from the previous iteration.");
-				bestMove = preBestMove;
-				bestScore = preBestScore;
-			}
+			sortRootMoves();
+			if (d==1) Arrays.fill(rootMoveScores, 0);
+			int bestScore = searchRoot(d, -oo, +oo);
+			if (timer.expired(timeLimit)) break;
 			long t = (long) (timer.elapsedTime()*0.1);
 			System.out.println(d+" "+bestScore+" "+t+" "+"0"+" "+Misc.moveForHuman(p, bestMove));
-
-//			for (int i=0; pv[0][i]>0; i++) {
-//				System.out.print(Misc.wbMove(pv[0][i])+" ");
-//			}
-//			System.out.println();
-			
-//			for (int i=0; pv[0][i]>0; i++) {
-//				System.out.print(p.moveForHuman(pv[0][i])+" ");
-//				if (!p.legalMove(pv[0][i])) { System.out.println("Illegal move!"); }
-//				p.makeMove(pv[0][i]);
-//			}
-//			for (int i=0; pv[0][i]>0; i++) p.undoMakeMove();
-//			System.out.println("\n");
-			if (timer.expired(timeLimit)) break;			
 		}
-		System.out.println("qNode = "+qNode);
-		System.out.println("QTime = "+qTime*0.001+" s");
-		System.out.println("GenMoveTime = "+gmTime*0.001+" s");
+		stats();
+	}
+	
+	void stats() {
+		System.out.println();
+		System.out.println("--------------------------");
+		double nps = 1e-3*pvsNode/(timer.elapsedTime());
+		System.out.println("NPS = "+String.valueOf(nps).substring(0, 5)+" mil");
+		System.out.println("Number of PV nodes: "+pv);
+		System.out.println("Number of NON_PV nodes: "+nonPV);
+		System.out.println("Percentage of PV nodes: "+100.0*pv/(pv+nonPV));
+		System.out.println("Number of PVS nodes searched: "+pvsNode);
+		System.out.println("Number of Q nodes searched: "+qNode);
+		System.out.println("LMR fail = "+lmrFail);
+		System.out.println("LMR = "+lmr);
+		System.out.println("--------------------------");
+		System.out.println();
 	}
 	
 	public int findBestMove() {

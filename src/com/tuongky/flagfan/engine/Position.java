@@ -406,11 +406,21 @@ public class Position {
 				if (PIECE_TYPES[p]==ROOK) ps[num++] = p;
 			}
 		}
-	
 		
 		// KING attack
+		if (IN_PALACE[square]) {
+			for (int dir=0; i<4; i++) {
+				src = square+KING_MOVE_TAB[dir];
+				p = board[src];
+				if (p==16||p==32) ps[num++] = p; 
+			}
+		}
 		
 		return num;
+	}
+	
+	public boolean isCaptureMove(int move) {
+		return board[move&0xff] != 0;
 	}
 	
 	public boolean goodCapture(int move) {
@@ -423,7 +433,6 @@ public class Position {
 	public int see(int src, int dst) {
 		int[] ps = new int[32];
 		int num = attackers(dst, ps);
-//		System.out.println("attackers = "+num);
 		int next = -1;
 		for (int i=0; i<num; i++)
 			if (board[src]==ps[i]) { next = i; break; }
@@ -434,7 +443,6 @@ public class Position {
 		while (next!=-1) {
 			int p = ps[next];
 			values[cp++] = PIECE_VALUES[p];
-//			System.out.println(PIECE_LETTERS.charAt(PIECE_TYPES[p]));
 			int r, f;
 			r = pieces[p] >> 4;
 			f = pieces[p] & 0xf;
@@ -459,8 +467,6 @@ public class Position {
 				bitRanks[r] ^= 1<<f;
 				bitFiles[f] ^= 1<<r;
 			}
-//		Misc.debug(ps);
-//		Misc.debug(values);
 		values[cp-1] = 0;
 		for (int i=cp-2; i>0; i--) {
 			values[i] = Math.max(0, values[i]-values[i+1]);
