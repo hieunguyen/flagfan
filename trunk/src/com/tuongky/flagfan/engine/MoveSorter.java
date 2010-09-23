@@ -7,8 +7,8 @@ public class MoveSorter {
 	/*
 	 *  ORDER:
 	 *  1. Hash Table
-	 *  2. Mate Killer
-	 *  3. Good Captures (SEE>=0) MVV/LVA
+	 *  2. Good Captures (SEE>=0) MVV/LVA
+	 *  3. Killer moves (non-capture)
 	 *  4. Non-Captures History Table
 	 *  5. Bad Captures (SEE<0)
 	 */
