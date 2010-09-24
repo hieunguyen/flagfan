@@ -12,9 +12,9 @@ import com.tuongky.utils.MyTimer;
 
 public class FlagFanEngineTest {
 
-	public static String fen = "rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RHEAKAEHR w - - - 1";
+//	public static String fen = "rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RHEAKAEHR w - - - 1";
 //	public static String fen = "rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1CH4C1/9/R1EAKAEHR b 0 1";
-//	public static String fen = "r1eakae2/5r3/h3c1hc1/p1C1p3C/6p2/9/P1P1P1P1P/4E4/R4H3/1HEAKA2R b 0 7";
+	public static String fen = "r1eakae2/5r3/h3c1hc1/p1C1p3C/6p2/9/P1P1P1P1P/4E4/R4H3/1HEAKA2R b 0 7";
 //	public static String fen = "3akaer1/3h5/4e1h2/pH5Cp/4P4/2p3c2/P8/2C6/4A4/4KA1R1 w 2 22";
 //	public static String fen = "2eak3C/4a4/4e2R1/P3r3p/9/1rP3P2/1c6P/4E4/4H4/2EAKA3 b 0 26";
 //	public static String fen = "2e2a3/5k3/4e4/5H1H1/2p6/9/9/E3E4/4A3p/3K1A3 w 9 1";
@@ -27,6 +27,8 @@ public class FlagFanEngineTest {
 //	public static String fen = "3aka3/3Ph4/1r1ce4/4R3p/9/6E2/8P/9/4K4/9 b 9 60"; // H5-7
 //	public static String fen = "4ka3/3Pa4/1r1c2R2/8p/9/6E2/8P/9/4K4/9 b 0 62";
 //	public static String fen = "4k2r1/2R6/5a3/h1p1p3C/8P/2P3C2/2c3P2/1p2E4/4A4/3AK1E2 b 4 37";
+//	public static String fen = "2eakaehr/r8/hc5c1/p1p1p1p1p/9/9/P1P1P1P1P/1CH3HC1/8R/R1EAKAE2 b 5 3";
+//	public static String fen = "rheakaehr/9/9/p1p1p1p1p/4c4/4c4/P1P3P1P/1C5C1/9/RHEAKAEHR w 0 1"; // mate
 //	public static String fen = "2eakaehr/r8/hc5c1/p1p1p1p1p/9/9/P1P1P1P1P/1CH3HC1/8R/R1EAKAE2 b 5 3";
 	
 	Search search;
