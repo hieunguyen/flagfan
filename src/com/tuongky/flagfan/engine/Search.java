@@ -80,7 +80,7 @@ public class Search {
 		int a = alpha;
 		int bestLocalMove = -1;
 		
-		boolean foundPV = false;
+		boolean searchPV = true;
 		
 		int[] moveList = moveLists[ply];
 		int num = mg.genCaptureMoves(p, moveList);
@@ -91,9 +91,9 @@ public class Search {
 		
 		for (int i=0; i<num; i++) {
 			int move = ms.nextMove();
-			if (!p.goodCapture(move)) continue;
+//			if (!p.goodCapture(move)) continue;
 			if (p.makeMove(move)) {
-				if (!foundPV) {
+				if (searchPV) {
 					score = -quiesce(ply+1, -beta, -alpha);
 				} else {
 					score = -quiesce(ply+1, -alpha-1, -alpha);
@@ -103,11 +103,11 @@ public class Search {
 				}				
 				p.undoMakeMove();
 				if (score>alpha) {
-					foundPV = true;
 					alpha = score;
 					bestLocalMove = move;
 					if (alpha>=beta) { alpha = beta; break; }
 				}
+				searchPV = false;
 			}
 		}
 		
@@ -176,7 +176,7 @@ public class Search {
 		}		
 		
 		int a = alpha;		
-		boolean foundPV = !pvNode;
+		boolean searchPV = true;
 
 		int ttMove = -1, iidMove = -1;
 		
@@ -184,21 +184,22 @@ public class Search {
 		if (ttEntry!=null && p.legalMove(ttEntry.move)) {
 			ttMove = ttEntry.move;
 			if (p.makeMove(ttMove)) {
-				if (!foundPV) {
+				if (searchPV) {
 					score = -PVS(ply+1, depth-1, -beta, -alpha, pvNode);
 				} else {
 					score = -PVS(ply+1, depth-1, -alpha-1, -alpha, NON_PV);
 					if (alpha<score&&score<beta) { // re-search
 						score = -PVS(ply+1, depth-1, -beta, -alpha, pvNode);
+						research++;
 					}
 				}				
 				p.undoMakeMove();
 				if (score>alpha) {
-					foundPV = true;
 					alpha = score;
 					bestLocalMove = ttMove;
 					if (alpha>=beta) alpha = beta; 
 				}
+				searchPV = false;
 			}			
 		}
 		
@@ -209,21 +210,22 @@ public class Search {
 			if (entry!=null && p.legalMove(entry.move)) {
 				iidMove = entry.move;
 				if (p.makeMove(iidMove)) {
-					if (!foundPV) {
+					if (searchPV) {
 						score = -PVS(ply+1, depth-1, -beta, -alpha, pvNode);
 					} else {
 						score = -PVS(ply+1, depth-1, -alpha-1, -alpha, NON_PV);
-						if (alpha<score&&score<beta) { // re-search
+						if (alpha<score && score<beta) { // re-search
 							score = -PVS(ply+1, depth-1, -beta, -alpha, pvNode);
+							research++;
 						}
 					}				
 					p.undoMakeMove();
 					if (score>alpha) {
-						foundPV = true;
 						alpha = score;
 						bestLocalMove = iidMove;
 						if (alpha>=beta) alpha = beta; 
 					}
+					searchPV = false;
 				}				
 			}
 		}
@@ -231,22 +233,24 @@ public class Search {
 		if (alpha<beta) {
 			int[] moveList = moveLists[ply];
 			int num = mg.genAllMoves(p, moveList);
-			MoveSorter ms = new MoveSorter(p, moveList, num, historyTable);		
+			MoveSorter ms = new MoveSorter(p, moveList, num, historyTable);
+			int nonCaptureSearched = 0;
 			for (int i=0; i<num; i++) {
 				int move = ms.nextMove();
 				if (move==ttMove||move==iidMove) continue;
 				boolean isCaptured = p.isCaptureMove(move);
 				if (p.makeMove(move)) {
-					if (!foundPV) {
+					if (!isCaptured) nonCaptureSearched++;
+					if (searchPV) {
 						score = -PVS(ply+1, depth-1, -beta, -alpha, pvNode);
 					} else {
-						if (!pvNode && i>3 && depth>=2 && !isCaptured) {
-							score = -PVS(ply+1, depth-2, -alpha-1, -alpha, NON_PV);
-							lmr++;
-							if (score>alpha) lmrFail++;
-						} else score = alpha+1;
+//						if (!pvNode && nonCaptureSearched>3 && depth>=2 && !isCaptured) {
+//							score = -PVS(ply+1, depth-2, -alpha-1, -alpha, NON_PV);
+//							lmr++;
+//							if (score>alpha) lmrFail++;
+//						} else 
+						score = alpha+1;
 						if (score>alpha) {
-//							System.out.println("LMR fail");
 							score = -PVS(ply+1, depth-1, -alpha-1, -alpha, NON_PV);
 							if (alpha<score && score<beta) {
 								score = -PVS(ply+1, depth-1, -beta, -alpha, pvNode);
@@ -256,7 +260,6 @@ public class Search {
 					}				
 					p.undoMakeMove();
 					if (score>alpha) {
-						foundPV = true;
 						alpha = score;
 						bestLocalMove = move;
 						if (alpha>=beta) {
@@ -264,6 +267,7 @@ public class Search {
 							break;
 						}
 					}
+					searchPV = false;
 				}
 			}
 		}
@@ -277,108 +281,9 @@ public class Search {
 		
 		if (bestLocalMove!=-1) {
 			historyTable[bestLocalMove>>8&0xff][bestLocalMove&0xff] += 1L<<depth;
+//			historyTable[bestLocalMove>>8&0xff][bestLocalMove&0xff] += 1;
 		}
 		
-		return alpha;
-	}
-	
-	int PVS2(int ply, int depth, int alpha, int beta, boolean pvNode) {
-		
-		pvsNode++;
-		
-		if (pvNode) pv++; else nonPV++;
-		
-		TTEntry ttEntry = tt.retrieve(p.zobristLock);
-		
-		if (ttEntry!=null&&ttEntry.depth>=depth) {
-			switch (ttEntry.flag) {
-				case LOWER_BOUND:
-					if (ttEntry.score>alpha) alpha = ttEntry.score;
-					break;
-				case UPPER_BOUND:
-					if (ttEntry.score<beta) beta = ttEntry.score;
-					break;
-				case EXACT_SCORE:
-					if (ttEntry.score<alpha) return alpha;
-					if (ttEntry.score>beta) return beta;
-					return ttEntry.score;
-			}
-			if (alpha>=beta) return beta;
-		}
-		
-		if (depth<=0) return evaluator.eval(p);
-		
-		int score, bestLocalMove = -1;
-
-		int a = alpha;		
-		boolean foundPV = !pvNode;
-
-		int ttMove = -1, iidMove = -1;
-		
-		// Transposition Table Move
-		if (ttEntry!=null && p.legalMove(ttEntry.move)) {
-			ttMove = ttEntry.move;
-			if (p.makeMove(ttMove)) {
-				if (!foundPV) {
-					score = -PVS(ply+1, depth-1, -beta, -alpha, pvNode);
-				} else {
-					score = -PVS(ply+1, depth-1, -alpha-1, -alpha, NON_PV);
-					if (alpha<score&&score<beta) { // re-search
-						score = -PVS(ply+1, depth-1, -beta, -alpha, pvNode);
-					}
-				}				
-				p.undoMakeMove();
-				if (score>alpha) {
-					foundPV = true;
-					alpha = score;
-					bestLocalMove = ttMove;
-					if (alpha>=beta) alpha = beta; 
-				}
-			}			
-		}
-		
-		if (alpha<beta) {
-			int[] moveList = moveLists[ply];
-			int num = mg.genAllMoves(p, moveList);
-			MoveSorter ms = new MoveSorter(p, moveList, num, historyTable);		
-			for (int i=0; i<num; i++) {
-				int move = ms.nextMove();
-				if (move==ttMove||move==iidMove) continue;
-				if (p.makeMove(move)) {
-					if (!foundPV) {
-						score = -PVS(ply+1, depth-1, -beta, -alpha, pvNode);
-					} else {
-						score = -PVS(ply+1, depth-1, -alpha-1, -alpha, NON_PV);
-						if (alpha<score && score<beta) {
-							score = -PVS(ply+1, depth-1, -beta, -alpha, pvNode);
-							research++;
-						}
-					}				
-					p.undoMakeMove();
-					if (score>alpha) {
-						foundPV = true;
-						alpha = score;
-						bestLocalMove = move;
-						if (alpha>=beta) {
-							alpha = beta;
-							break;
-						}
-					}
-				}
-			}
-		}
-		
-		byte flag = EXACT_SCORE;
-		if (alpha>=beta) flag = LOWER_BOUND; else
-			if (alpha<=a) flag = UPPER_BOUND;
-		tt.store(p.zobristLock, alpha, bestLocalMove, (byte) depth, flag);
-		
-		if (flag==UPPER_BOUND && (ply&1)==1) rootMoveScores[rootMoveIndex]++;
-		
-		if (bestLocalMove!=-1) {
-			historyTable[bestLocalMove>>8&0xff][bestLocalMove&0xff] += 1L<<depth;
-		}
-
 		return alpha;
 	}
 	
@@ -412,6 +317,7 @@ public class Search {
 	}
 	
 	void sortRootMoves() {
+		if (bestMove!=-1)
 		for (int i=0; i<rootNum; i++)
 			if (rootMoves[i]==bestMove) {
 				rootMoveScores[i] += 1<<30;
@@ -430,27 +336,28 @@ public class Search {
 				rootMoves[j] = tmp;
 			}
 		
+		if (bestMove!=-1)
 		rootMoveScores[0] -= 1<<30;
 	}
 	
 	int searchRoot(int depth, int alpha, int beta) {
 		int score;
-		boolean foundPV = false;
+		boolean searchPV = true;
 		for (int i=0; i<rootNum; i++) {
 			rootMoveIndex = i;
 			int move = rootMoves[i];
 			if (p.makeMove(move)) {
-				if (!foundPV) {
+				if (searchPV) {
 					score = -PVS(1, depth-1, -beta, -alpha, PV_NODE);
 				} else {
 					score = -PVS(1, depth-1, -alpha-1, -alpha, NON_PV);
-					if (alpha<score && score<beta) score = -PVS2(1, depth-1, -beta, -alpha, PV_NODE);
+					if (alpha<score && score<beta) score = -PVS(1, depth-1, -beta, -alpha, PV_NODE);
 				}
 				if (score>alpha && !timer.expired(timeLimit)) {
 					alpha = score;
 					bestMove = move;
-					foundPV = true;
 				}
+				searchPV = false;
 				p.undoMakeMove();
 			}
 		}
@@ -473,14 +380,14 @@ public class Search {
 	void stats() {
 		System.out.println();
 		System.out.println("--------------------------");
+		System.out.println("Number of PVS nodes searched: "+pvsNode);
+		System.out.println("Number of Q nodes searched: "+qNode);
 		double nps = 1e-3*pvsNode/(timer.elapsedTime());
-		System.out.println("NPS = "+String.valueOf(nps).substring(0, 5)+" mil");
+		System.out.println("NPS = "+String.valueOf(nps)+" mil");
 		System.out.println("Number of PV nodes: "+pv);
 		System.out.println("Number of NON_PV nodes: "+nonPV);
 		if (pv==0) pv = 1;
 		System.out.println("Percentage of PV nodes: "+100.0*pv/(pv+nonPV));
-		System.out.println("Number of PVS nodes searched: "+pvsNode);
-		System.out.println("Number of Q nodes searched: "+qNode);
 		System.out.println("LMR fail = "+lmrFail);
 		System.out.println("LMR = "+lmr);
 		System.out.println("Re-search = "+research);
