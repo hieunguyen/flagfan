@@ -43,6 +43,7 @@ public class Constants {
 	
 	// Move
 	public static final int NULL_MOVE 				= 0;
+	public static final int NO_MOVE 				= -1;
 	
 	// Search
 	public static final int MAX_DEPTH 				= 50;
