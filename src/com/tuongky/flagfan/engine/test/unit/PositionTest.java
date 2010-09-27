@@ -21,7 +21,7 @@ public class PositionTest {
 		p = new Position(fen);
 	}
 	
-	@Test
+//	@Test
 	public void testSEE() {
 //		int move = Misc.ffMove("d1d6");
 		int move = Misc.ffMove("f4g6");
@@ -89,5 +89,5 @@ public class PositionTest {
 		System.out.println();
 		Assert.assertEquals(1, num);
 	}
-	
+
 }

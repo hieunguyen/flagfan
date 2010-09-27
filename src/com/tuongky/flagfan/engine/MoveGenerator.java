@@ -789,4 +789,189 @@ public class MoveGenerator {
 		return num;
 	}
 
+	public int genNonCaptureMoves(Position p, int[] moveList) {
+		int[] board = p.board;
+		int[] pieces = p.pieces;
+		int[] moves;
+		int src, dst, num;
+		int pieceTag, ind, rank, file, x, y;
+		
+		num = 0;
+		
+		pieceTag = 16 + (p.turn<<4);
+		
+		// KING
+		src = pieces[pieceTag];
+		moves = KING_MOVES[src];
+		if (src!=0) {
+			ind = 0;
+			dst = moves[ind];
+			while (dst!=0) {
+				if (board[dst]==0) {
+					moveList[num++] = src<<8|dst;
+				}
+				ind++;
+				dst = moves[ind];
+			}
+		}
+		
+		// ADVISOR
+		for (int i=1; i<=2; i++) {
+			src = pieces[pieceTag+i];
+			moves = ADVISOR_MOVES[src];
+			if (src!=0) {
+				ind = 0;
+				dst = moves[ind];
+				while (dst!=0) {
+					if (board[dst]==0) {
+						moveList[num++] = src<<8|dst;
+					}
+					ind++;
+ 					dst = moves[ind];
+				}				
+			}
+		}
+		
+		// ELEPHANT
+		for (int i=3; i<=4; i++) {
+			src = pieces[pieceTag+i];
+			if (src!=0) {
+				ind = 0;
+				moves = ELEPHANT_MOVES[src];
+				dst = moves[ind];				
+				while (dst!=0) {
+					int ee = ELEPHANT_EYES[src][ind];
+					if (board[ee]==0 && board[dst]==0) {
+						moveList[num++] = src<<8|dst;
+					}
+					ind++;
+ 					dst = moves[ind];
+				}				
+			}			
+		}
+		
+		// ROOK		
+		for (int i=5; i<=6; i++) {
+			src = pieces[pieceTag+i];
+			if (src!=0) {
+				
+				rank = src >> 4;
+				file = src & 0xf;
+				
+				int bitRank, bitFile;
+				bitRank = p.bitRanks[rank]>>3;
+				bitFile = p.bitFiles[file]>>3;
+				
+				// HORIZONTAL
+				
+				y = ROOK_RANK_NO_CAP_TAB[file-3][bitRank][0];
+				while (y>file) {
+					moveList[num++] = src<<8|rank<<4|y;
+					y--;
+				}
+
+				y = ROOK_RANK_NO_CAP_TAB[file-3][bitRank][1];
+				while (y<file) {
+					moveList[num++] = src<<8|rank<<4|y;
+					y++;
+				}
+				
+				// VERTICAL
+				
+				x = ROOK_FILE_NO_CAP_TAB[rank-3][bitFile][0];
+				while (x>rank) {
+					moveList[num++] = src<<8|x<<4|file;
+					x--;
+				}
+
+				x = ROOK_FILE_NO_CAP_TAB[rank-3][bitFile][1];
+				while (x<rank) {
+					moveList[num++] = src<<8|x<<4|file;
+					x++;
+				}
+				
+			}			
+		}
+
+		// CANNON
+		for (int i=7; i<=8; i++) {
+			src = pieces[pieceTag+i];
+			if (src!=0) {
+				
+				rank = src >> 4;
+				file = src & 0xf;
+				
+				int bitRank, bitFile;
+				bitRank = p.bitRanks[rank]>>3;
+				bitFile = p.bitFiles[file]>>3;
+				
+				// HORIZONTAL
+				
+				y = ROOK_RANK_NO_CAP_TAB[file-3][bitRank][0];
+				while (y>file) {
+					moveList[num++] = src<<8|rank<<4|y;
+					y--;
+				}
+
+				y = ROOK_RANK_NO_CAP_TAB[file-3][bitRank][1];
+				while (y<file) {
+					moveList[num++] = src<<8|rank<<4|y;
+					y++;
+				}
+				
+				// VERTICAL
+				
+				x = ROOK_FILE_NO_CAP_TAB[rank-3][bitFile][0];
+				while (x>rank) {
+					moveList[num++] = src<<8|x<<4|file;
+					x--;
+				}
+
+				x = ROOK_FILE_NO_CAP_TAB[rank-3][bitFile][1];
+				while (x<rank) {
+					moveList[num++] = src<<8|x<<4|file;
+					x++;
+				}
+				
+			}			
+		}
+
+		// KNIGHT
+		for (int i=9; i<=10; i++) {
+			src = pieces[pieceTag+i];
+			if (src!=0) {
+				ind = 0;
+				moves = HORSE_MOVES[src];
+				dst = moves[ind];
+				while (dst!=0) {
+					int hleg = HORSE_LEGS[src][ind];
+					if (board[hleg]==0&&board[dst]==0) {
+						moveList[num++] = (src<<8)+dst;
+					}
+					ind++;
+ 					dst = moves[ind];
+				}				
+			}			
+		}
+		
+		// PAWN
+		for (int i=11; i<=15; i++) {
+			src = pieces[pieceTag+i];
+			if (src!=0) {
+				ind = 0;
+				moves = PAWN_MOVES[src][p.turn]; 
+				dst = moves[ind];
+				while (dst!=0) {
+					if (board[dst]==0) {
+						moveList[num++] = (src<<8)+dst;
+					}
+					ind++;
+ 					dst = moves[ind];
+				}				
+			}			
+		}
+		
+		return num;
+	}
+
 }

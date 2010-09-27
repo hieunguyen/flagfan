@@ -1,6 +1,7 @@
 package com.tuongky.flagfan.engine;
 
 import static com.tuongky.flagfan.engine.Constants.*;
+import static com.tuongky.flagfan.engine.MoveSelector.*;
 
 import java.util.Arrays;
 
@@ -18,17 +19,17 @@ public class Search {
 	int maxDepth;
 	long timeLimit;
 	
-	long[][] historyTable;
 	int[][] moveLists;
 	int bestMove;
+	
+	int[][] killers;
+	long[][] historyTable;
 	
 	int[] rootMoves;
 	int[] rootMoveScores;
 	int rootNum, rootMoveIndex;
 	
 	long nonPV, pv, pvsNode, qNode;
-	
-	long lmrFail, lmr, research;
 	
 	public Search(Position p) {
 		this.p = p;
@@ -78,7 +79,7 @@ public class Search {
 		if (score>alpha) alpha = score;
 		
 		int a = alpha;
-		int bestLocalMove = -1;
+		int bestLocalMove = NO_MOVE;
 		
 		boolean searchPV = true;
 		
@@ -91,7 +92,6 @@ public class Search {
 		
 		for (int i=0; i<num; i++) {
 			int move = ms.nextMove();
-//			if (!p.goodCapture(move)) continue;
 			if (p.makeMove(move)) {
 				if (searchPV) {
 					score = -quiesce(ply+1, -beta, -alpha);
@@ -163,8 +163,8 @@ public class Search {
 		
 		if (depth<=0) return quiesce(ply, alpha, beta);
 		
-		int score, bestLocalMove = -1;
-
+		int score;
+		
 		// Null Move
 		if (!pvNode && depth>2 && p.isNullMoveOK() && !p.isChecked()) {
 			p.makeNullMove();
@@ -175,101 +175,55 @@ public class Search {
 			if (score>alpha) { alpha = score; }
 		}		
 		
-		int a = alpha;		
-		boolean searchPV = true;
-
-		int ttMove = -1, iidMove = -1;
+		int ttMove = NO_MOVE;
 		
 		// Transposition Table Move
-		if (ttEntry!=null && p.legalMove(ttEntry.move)) {
-			ttMove = ttEntry.move;
-			if (p.makeMove(ttMove)) {
+		if (ttEntry!=null && p.legalMove(ttEntry.move))	ttMove = ttEntry.move;
+		
+		// IID - Internal Iterative Deepening
+		if (ttMove==NO_MOVE && depth>=3) {
+			score = PVS(ply, depth-3, alpha, beta, pvNode);
+			TTEntry entry = tt.retrieve(p.zobristLock);			
+			if (entry!=null && p.legalMove(entry.move))	ttMove = entry.move;
+		}
+		
+		int a = alpha;
+		int bestLocalMove = NO_MOVE;
+		boolean searchPV = true;
+
+		MoveSelector ms = new MoveSelector(p, FULL_SEARCH, ttMove, historyTable, killers[ply]);
+		
+		int count = 0;
+		while (true) {
+			int move = ms.nextMove();
+			if (move==NO_MOVE) break;
+			boolean isCapture = p.isCaptureMove(move);
+			if (p.makeMove(move)) {
+				count++;
 				if (searchPV) {
 					score = -PVS(ply+1, depth-1, -beta, -alpha, pvNode);
 				} else {
-					score = -PVS(ply+1, depth-1, -alpha-1, -alpha, NON_PV);
-					if (alpha<score&&score<beta) { // re-search
-						score = -PVS(ply+1, depth-1, -beta, -alpha, pvNode);
-						research++;
+					if (count>3 && !isCapture && depth>=2) {
+						score = -PVS(ply+1, depth-2, -alpha-1, -alpha, NON_PV);
+					} else score = alpha+1;
+					if (score>alpha) {
+						score = -PVS(ply+1, depth-1, -alpha-1, -alpha, NON_PV);
+						if (alpha<score && score<beta) {
+							score = -PVS(ply+1, depth-1, -beta, -alpha, PV_NODE);
+						}
 					}
 				}				
 				p.undoMakeMove();
+				searchPV = false;
 				if (score>alpha) {
 					alpha = score;
-					bestLocalMove = ttMove;
-					if (alpha>=beta) alpha = beta; 
+					bestLocalMove = move;
+					if (alpha>=beta) {
+						alpha = beta;
+						break;
+					}
 				}
-				searchPV = false;
 			}			
-		}
-		
-		// IID - Internal Iterative Deepening
-		if (alpha<beta && depth>=3) {
-			score = PVS(ply, depth-3, alpha, beta, pvNode);
-			TTEntry entry = tt.retrieve(p.zobristLock);			
-			if (entry!=null && p.legalMove(entry.move)) {
-				iidMove = entry.move;
-				if (p.makeMove(iidMove)) {
-					if (searchPV) {
-						score = -PVS(ply+1, depth-1, -beta, -alpha, pvNode);
-					} else {
-						score = -PVS(ply+1, depth-1, -alpha-1, -alpha, NON_PV);
-						if (alpha<score && score<beta) { // re-search
-							score = -PVS(ply+1, depth-1, -beta, -alpha, pvNode);
-							research++;
-						}
-					}				
-					p.undoMakeMove();
-					if (score>alpha) {
-						alpha = score;
-						bestLocalMove = iidMove;
-						if (alpha>=beta) alpha = beta; 
-					}
-					searchPV = false;
-				}				
-			}
-		}
-		
-		if (alpha<beta) {
-			int[] moveList = moveLists[ply];
-			int num = mg.genAllMoves(p, moveList);
-			MoveSorter ms = new MoveSorter(p, moveList, num, historyTable);
-			int nonCaptureSearched = 0;
-			for (int i=0; i<num; i++) {
-				int move = ms.nextMove();
-				if (move==ttMove||move==iidMove) continue;
-				boolean isCaptured = p.isCaptureMove(move);
-				if (p.makeMove(move)) {
-					if (!isCaptured) nonCaptureSearched++;
-					if (searchPV) {
-						score = -PVS(ply+1, depth-1, -beta, -alpha, pvNode);
-					} else {
-//						if (!pvNode && nonCaptureSearched>3 && depth>=2 && !isCaptured) {
-//							score = -PVS(ply+1, depth-2, -alpha-1, -alpha, NON_PV);
-//							lmr++;
-//							if (score>alpha) lmrFail++;
-//						} else 
-						score = alpha+1;
-						if (score>alpha) {
-							score = -PVS(ply+1, depth-1, -alpha-1, -alpha, NON_PV);
-							if (alpha<score && score<beta) {
-								score = -PVS(ply+1, depth-1, -beta, -alpha, pvNode);
-								research++;
-							}
-						}
-					}				
-					p.undoMakeMove();
-					if (score>alpha) {
-						alpha = score;
-						bestLocalMove = move;
-						if (alpha>=beta) {
-							alpha = beta;
-							break;
-						}
-					}
-					searchPV = false;
-				}
-			}
 		}
 		
 		byte flag = EXACT_SCORE;
@@ -279,19 +233,33 @@ public class Search {
 		
 		if (flag==UPPER_BOUND && (ply&1)==1) rootMoveScores[rootMoveIndex]++;
 		
-		if (bestLocalMove!=-1) {
-			historyTable[bestLocalMove>>8&0xff][bestLocalMove&0xff] += 1L<<depth;
-//			historyTable[bestLocalMove>>8&0xff][bestLocalMove&0xff] += 1;
+		if (bestLocalMove != NO_MOVE) {
+			// update history table		
+			historyTable[bestLocalMove>>8&0xff][bestLocalMove&0xff] += depth * depth;
+			
+			// update killers
+			updateKillers(killers[ply], bestLocalMove);
 		}
 		
 		return alpha;
 	}
 	
+	void updateKillers(int[] killers, int move) {
+		if (killers[0] != move) {
+			killers[1] = killers[0];
+			killers[0] = move;
+		}
+	}
+	
 	void beforeSearch() {
 		timer = new MyTimer();
 		tt = new TTable();
-		historyTable = new long[256][256];		
-		bestMove = -1;
+		historyTable = new long[256][256];
+		
+		killers = new int[MAX_DEPTH][2];
+		for (int d=0; d<MAX_DEPTH; d++) killers[d][0] = killers[d][1] = NO_MOVE;
+		
+		bestMove = NO_MOVE;
 		initRootMoves();
 		
 		// stats
@@ -299,8 +267,6 @@ public class Search {
 		pv = 0;
 		pvsNode = 0;
 		qNode = 0;
-		lmr = lmrFail = 0;
-		research = 0;
 	}
 	
 	void initRootMoves() {
@@ -317,7 +283,7 @@ public class Search {
 	}
 	
 	void sortRootMoves() {
-		if (bestMove!=-1)
+		if (bestMove != NO_MOVE)
 		for (int i=0; i<rootNum; i++)
 			if (rootMoves[i]==bestMove) {
 				rootMoveScores[i] += 1<<30;
@@ -336,7 +302,7 @@ public class Search {
 				rootMoves[j] = tmp;
 			}
 		
-		if (bestMove!=-1)
+		if (bestMove!=NO_MOVE)
 		rootMoveScores[0] -= 1<<30;
 	}
 	
@@ -388,9 +354,6 @@ public class Search {
 		System.out.println("Number of NON_PV nodes: "+nonPV);
 		if (pv==0) pv = 1;
 		System.out.println("Percentage of PV nodes: "+100.0*pv/(pv+nonPV));
-		System.out.println("LMR fail = "+lmrFail);
-		System.out.println("LMR = "+lmr);
-		System.out.println("Re-search = "+research);
 		System.out.println("--------------------------");
 		System.out.println();
 	}
