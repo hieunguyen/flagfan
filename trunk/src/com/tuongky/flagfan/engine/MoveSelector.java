@@ -164,5 +164,13 @@ public class MoveSelector {
 		}
 		return NO_MOVE;
 	}
+
+	public int getPhase() {
+		return phase;
+	}
+
+	public boolean inReductionPhase() {
+		return phase==NON_CAPTURE || phase==BAD_CAPTURE;
+	}
 	
 }
