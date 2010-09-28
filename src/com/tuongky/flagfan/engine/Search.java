@@ -41,6 +41,7 @@ public class Search {
 	}
 
 	public void setMaxDepth(int maxDepth) {
+		if (maxDepth<0) maxDepth = MAX_DEPTH;
 		this.maxDepth = maxDepth;
 	}
 	
@@ -49,7 +50,7 @@ public class Search {
 		this.timeLimit = timeLimit;
 	}
 	
-	int quiesce(int ply, int alpha, int beta) {
+	int quiesce(int ply, int alpha, int beta, boolean pvNode) {
 		
 		if (timer.expired(timeLimit)) return alpha; // fail low if pass time limit
 		
@@ -78,37 +79,40 @@ public class Search {
 		
 		if (score>alpha) alpha = score;
 		
+		int ttMove = NO_MOVE;
+		// Transposition Table Move
+		if (ttEntry!=null && p.legalMove(ttEntry.move))	ttMove = ttEntry.move;
+		
 		int a = alpha;
 		int bestLocalMove = NO_MOVE;
 		
 		boolean searchPV = true;
 		
-		int[] moveList = moveLists[ply];
-		int num = mg.genCaptureMoves(p, moveList);
+		MoveSelector ms = new MoveSelector(p, QUIESCENCE, ttMove, null, null);
 		
-		if (num==0) return alpha;
-		
-		MoveSorter ms = new MoveSorter(p, moveList, num, historyTable);
-		
-		for (int i=0; i<num; i++) {
+		while (true) {
 			int move = ms.nextMove();
+			if (move==NO_MOVE) break;
 			if (p.makeMove(move)) {
 				if (searchPV) {
-					score = -quiesce(ply+1, -beta, -alpha);
+					score = -quiesce(ply+1, -beta, -alpha, pvNode);
 				} else {
-					score = -quiesce(ply+1, -alpha-1, -alpha);
-					if (alpha<score&&score<beta) { // re-search
-						score = -quiesce(ply+1, -beta, -alpha);
+					score = -quiesce(ply+1, -alpha-1, -alpha, NON_PV);
+					if (alpha<score && score<beta) {
+						score = -quiesce(ply+1, -beta, -alpha, PV_NODE);
 					}
 				}				
 				p.undoMakeMove();
+				searchPV = false;
 				if (score>alpha) {
 					alpha = score;
 					bestLocalMove = move;
-					if (alpha>=beta) { alpha = beta; break; }
+					if (alpha>=beta) {
+						alpha = beta;
+						break;
+					}
 				}
-				searchPV = false;
-			}
+			}			
 		}
 		
 		byte flag = EXACT_SCORE;
@@ -161,19 +165,25 @@ public class Search {
 		if (repValue==3) return Math.max(-WIN_VALUE+ply, alpha);
 		if (repValue==5) return Math.min(WIN_VALUE-ply, beta);
 		
-		if (depth<=0) return quiesce(ply, alpha, beta);
+		if (depth<=0) return quiesce(ply, alpha, beta, pvNode);
 		
 		int score;
 		
+		boolean isChecked = p.isChecked();
+		
+		int ext = 0;
+		
 		// Null Move
-		if (!pvNode && depth>2 && p.isNullMoveOK() && !p.isChecked()) {
+		if (!pvNode && depth>2 && p.isNullMoveOK() && !isChecked) {
 			p.makeNullMove();
 			int nmr = (depth>6) ? 3 : 2;
 			score = -PVS(ply+1, depth-1-nmr, -beta, -alpha, NON_PV);
 			p.undoMakeNullMove();
 			if (score>=beta) return beta;	
 			if (score>alpha) { alpha = score; }
-		}		
+		}
+		
+		if (isChecked) ext++;
 		
 		int ttMove = NO_MOVE;
 		
@@ -193,23 +203,22 @@ public class Search {
 
 		MoveSelector ms = new MoveSelector(p, FULL_SEARCH, ttMove, historyTable, killers[ply]);
 		
-		int count = 0;
+		int movesSearched = 0;
 		while (true) {
 			int move = ms.nextMove();
 			if (move==NO_MOVE) break;
-			boolean isCapture = p.isCaptureMove(move);
 			if (p.makeMove(move)) {
-				count++;
+				movesSearched++;
 				if (searchPV) {
-					score = -PVS(ply+1, depth-1, -beta, -alpha, pvNode);
+					score = -PVS(ply+1, depth-1+ext, -beta, -alpha, pvNode);
 				} else {
-					if (count>3 && !isCapture && depth>=2) {
+					if (!pvNode && movesSearched>3 && depth>2 && ms.inReductionPhase() && ext==0) {
 						score = -PVS(ply+1, depth-2, -alpha-1, -alpha, NON_PV);
 					} else score = alpha+1;
-					if (score>alpha) {
-						score = -PVS(ply+1, depth-1, -alpha-1, -alpha, NON_PV);
+					if (alpha<score) {
+						score = -PVS(ply+1, depth-1+ext, -alpha-1, -alpha, NON_PV);
 						if (alpha<score && score<beta) {
-							score = -PVS(ply+1, depth-1, -beta, -alpha, PV_NODE);
+							score = -PVS(ply+1, depth-1+ext, -beta, -alpha, PV_NODE);
 						}
 					}
 				}				
@@ -276,7 +285,7 @@ public class Search {
 		for (int i=0; i<rootNum; i++) {
 			int move = rootMoves[i];
 			if (p.makeMove(move)) {
-				rootMoveScores[i] = quiesce(0, -oo, +oo);
+				rootMoveScores[i] = quiesce(0, -oo, +oo, PV_NODE);
 				p.undoMakeMove();
 			}
 		}
@@ -309,15 +318,19 @@ public class Search {
 	int searchRoot(int depth, int alpha, int beta) {
 		int score;
 		boolean searchPV = true;
+		int movesSearched = 0;
 		for (int i=0; i<rootNum; i++) {
 			rootMoveIndex = i;
 			int move = rootMoves[i];
 			if (p.makeMove(move)) {
+				movesSearched++;
 				if (searchPV) {
 					score = -PVS(1, depth-1, -beta, -alpha, PV_NODE);
 				} else {
 					score = -PVS(1, depth-1, -alpha-1, -alpha, NON_PV);
-					if (alpha<score && score<beta) score = -PVS(1, depth-1, -beta, -alpha, PV_NODE);
+					if (alpha<score && score<beta) {
+						score = -PVS(1, depth-1, -beta, -alpha, PV_NODE);
+					}
 				}
 				if (score>alpha && !timer.expired(timeLimit)) {
 					alpha = score;

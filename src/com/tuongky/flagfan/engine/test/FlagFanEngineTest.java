@@ -30,6 +30,10 @@ public class FlagFanEngineTest {
 //	public static String fen = "2eakaehr/r8/hc5c1/p1p1p1p1p/9/9/P1P1P1P1P/1CH3HC1/8R/R1EAKAE2 b 5 3";
 //	public static String fen = "rheakaehr/9/9/p1p1p1p1p/4c4/4c4/P1P3P1P/1C5C1/9/RHEAKAEHR w 0 1"; // mate
 //	public static String fen = "2eakaehr/r8/hc5c1/p1p1p1p1p/9/9/P1P1P1P1P/1CH3HC1/8R/R1EAKAE2 b 5 3";
+//	public static String fen = "2eakae2/8r/h1c3hc1/p1p1p1p1p/9/2P1C4/Pr2P1P1P/1CH3H2/1R7/2EAKAE1R b 6 7";
+//	public static String fen = "2e1kae2/4a3r/h1c3hc1/p1p1p1p1p/9/2P1C4/Pr2P1P1P/1CH3H2/1R7/2EAKAER1 b 8 8";
+//	public static String fen = "3k5/4a4/9/2H1c4/9/9/9/9/5p3/4K4 b 7 144";
+//	public static String fen = "r1eakhe1r/4a4/4c4/p1p3R1p/4C3c/9/P4R3/4C3H/9/2EAKAE2 w 13 25";
 	
 	Search search;
 	Position p;
@@ -41,7 +45,7 @@ public class FlagFanEngineTest {
 //		for (String wbm: moves) makeMove(wbm);
 		MyTimer timer = new MyTimer();
 		search.setTimeLimit(-1);
-		search.setMaxDepth(12);
+		search.setMaxDepth(20);
 		int bestMove = search.findBestMove();
 		System.out.println("The best move is:");
 		Misc.printMoveForHuman(p, bestMove);
