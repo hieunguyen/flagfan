@@ -174,7 +174,7 @@ public class Search {
 		int ext = 0;
 		
 		// Null Move
-		if (!pvNode && depth>2 && p.isNullMoveOK() && !isChecked) {
+		if (!pvNode && depth>200 && p.isNullMoveOK() && !isChecked) {
 			p.makeNullMove();
 			int nmr = (depth>6) ? 3 : 2;
 			score = -PVS(ply+1, depth-1-nmr, -beta, -alpha, NON_PV);
@@ -212,7 +212,7 @@ public class Search {
 				if (searchPV) {
 					score = -PVS(ply+1, depth-1+ext, -beta, -alpha, pvNode);
 				} else {
-					if (!pvNode && movesSearched>3 && depth>2 && ms.inReductionPhase() && ext==0) {
+					if (!pvNode && movesSearched>300 && depth>2 && ms.inReductionPhase() && ext==0) {
 						score = -PVS(ply+1, depth-2, -alpha-1, -alpha, NON_PV);
 					} else score = alpha+1;
 					if (alpha<score) {

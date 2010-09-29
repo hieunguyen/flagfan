@@ -12,7 +12,7 @@ import com.tuongky.utils.MyTimer;
 
 public class FlagFanEngineTest {
 
-	public static String fen = "rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RHEAKAEHR w - - - 1";
+//	public static String fen = "rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1C5C1/9/RHEAKAEHR w - - - 1";
 //	public static String fen = "rheakaehr/9/1c5c1/p1p1p1p1p/9/9/P1P1P1P1P/1CH4C1/9/R1EAKAEHR b 0 1";
 //	public static String fen = "r1eakae2/5r3/h3c1hc1/p1C1p3C/6p2/9/P1P1P1P1P/4E4/R4H3/1HEAKA2R b 0 7";
 //	public static String fen = "3akaer1/3h5/4e1h2/pH5Cp/4P4/2p3c2/P8/2C6/4A4/4KA1R1 w 2 22";
@@ -34,6 +34,7 @@ public class FlagFanEngineTest {
 //	public static String fen = "2e1kae2/4a3r/h1c3hc1/p1p1p1p1p/9/2P1C4/Pr2P1P1P/1CH3H2/1R7/2EAKAER1 b 8 8";
 //	public static String fen = "3k5/4a4/9/2H1c4/9/9/9/9/5p3/4K4 b 7 144";
 //	public static String fen = "r1eakhe1r/4a4/4c4/p1p3R1p/4C3c/9/P4R3/4C3H/9/2EAKAE2 w 13 25";
+	public static String fen = "2ea5/4k4/3a2P1H/7R1/9/4r4/9/9/3K5/6c2 w 39 201";
 	
 	Search search;
 	Position p;
@@ -45,7 +46,7 @@ public class FlagFanEngineTest {
 //		for (String wbm: moves) makeMove(wbm);
 		MyTimer timer = new MyTimer();
 		search.setTimeLimit(-1);
-		search.setMaxDepth(20);
+		search.setMaxDepth(-1);
 		int bestMove = search.findBestMove();
 		System.out.println("The best move is:");
 		Misc.printMoveForHuman(p, bestMove);
